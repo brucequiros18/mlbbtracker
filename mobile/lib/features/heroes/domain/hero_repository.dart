@@ -13,4 +13,7 @@ abstract interface class HeroRepository {
     String rank,
     String sortField,
   });
+
+  /// Daily win/ban/pick timeline for one hero, ascending by date.
+  Future<List<HeroTrendPoint>> heroTrends(String identifier, {int days});
 }

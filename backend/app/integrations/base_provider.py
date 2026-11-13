@@ -19,6 +19,7 @@ from app.integrations.models import (
     HeroRef,
     PlayerProfileData,
     RankingEntry,
+    TrendPoint,
 )
 
 
@@ -46,6 +47,13 @@ class HeroRankingProvider(ABC):
     async def fetch_rankings(
         self, *, days: int = 7, rank: str = "all", sort_field: str = "win_rate"
     ) -> list[RankingEntry]: ...
+
+
+class HeroTrendProvider(ABC):
+    name: str = "trend"
+
+    @abstractmethod
+    async def fetch_trends(self, hero_id: int, *, days: int = 7) -> list[TrendPoint]: ...
 
 
 class PlayerProvider(ABC):

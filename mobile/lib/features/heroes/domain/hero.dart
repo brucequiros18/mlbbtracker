@@ -81,6 +81,29 @@ class HeroSkill {
       );
 }
 
+/// A single day of a hero's competitive statistics.
+@immutable
+class HeroTrendPoint {
+  const HeroTrendPoint({
+    required this.date,
+    required this.winRate,
+    required this.banRate,
+    required this.pickRate,
+  });
+
+  final String date;
+  final double winRate;
+  final double banRate;
+  final double pickRate;
+
+  factory HeroTrendPoint.fromJson(Map<String, dynamic> json) => HeroTrendPoint(
+        date: json['date'] as String? ?? '',
+        winRate: (json['winRate'] as num?)?.toDouble() ?? 0,
+        banRate: (json['banRate'] as num?)?.toDouble() ?? 0,
+        pickRate: (json['pickRate'] as num?)?.toDouble() ?? 0,
+      );
+}
+
 /// Full hero profile including skills and relationship lists.
 @immutable
 class HeroDetail {

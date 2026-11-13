@@ -32,6 +32,22 @@ def test_rankings_sorted_by_win_rate(client):
     assert rows[1]["id"] == 78
 
 
+def test_hero_trends_sorted_ascending(client):
+    resp = client.get("/api/v1/heroes/khufra/trends", params={"days": 7})
+    assert resp.status_code == 200
+    body = resp.json()
+    dates = [p["date"] for p in body["data"]]
+    assert dates == sorted(dates)
+    assert body["meta"]["count"] == 2
+    assert body["data"][0]["win_rate"] < body["data"][1]["win_rate"]
+
+
+def test_hero_trends_not_found(client):
+    resp = client.get("/api/v1/heroes/does-not-exist/trends")
+    assert resp.status_code == 404
+    assert resp.json()["code"] == "NOT_FOUND"
+
+
 def test_hero_detail_by_slug(client):
     resp = client.get("/api/v1/heroes/khufra")
     assert resp.status_code == 200

@@ -20,6 +20,7 @@ from app.integrations.models import (
     HeroRef,
     HeroSkillData,
     RankingEntry,
+    TrendPoint,
 )
 from app.integrations.player_provider import NullPlayerProvider
 from app.integrations.provider_factory import Providers
@@ -48,6 +49,12 @@ class FakeRone:
 
     async def fetch_rankings(self, *, days: int = 7, rank: str = "all", sort_field: str = "win_rate"):
         return self.rankings
+
+    async def fetch_trends(self, hero_id: int, *, days: int = 7) -> list[TrendPoint]:
+        return [
+            TrendPoint(date="2026-11-10", win_rate=0.548, ban_rate=0.021, pick_rate=0.0034),
+            TrendPoint(date="2026-11-11", win_rate=0.550, ban_rate=0.020, pick_rate=0.0035),
+        ]
 
 
 class FakeDex:

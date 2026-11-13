@@ -14,7 +14,7 @@ from app.schemas.common import (
     ListResponse,
     Meta,
 )
-from app.schemas.hero import HeroDetail, HeroRanking, HeroSummary
+from app.schemas.hero import HeroDetail, HeroRanking, HeroSummary, HeroTrendPoint
 from app.services.hero_service import HeroService
 
 router = APIRouter(prefix="/heroes", tags=["heroes"])
@@ -55,6 +55,26 @@ async def hero_rankings(
         data=rows,
         meta=Meta(count=len(rows), sources=[RONE_SOURCE, DEX_SOURCE]),
     )
+
+
+@router.get(
+    "/{identifier}/trends",
+    response_model=ListResponse[HeroTrendPoint],
+    summary="Daily win/ban/pick timeline for a hero",
+)
+async def hero_trends(
+    identifier: str,
+    service: Annotated[HeroService, Depends(get_hero_service)],
+    days: Annotated[RankWindow, Query(description="Window in days")] = "7",
+) -> ListResponse[HeroTrendPoint]:
+    points = await service.trends(identifier, days=int(days))
+    data = [
+        HeroTrendPoint(
+            date=p.date, win_rate=p.win_rate, ban_rate=p.ban_rate, pick_rate=p.pick_rate
+        )
+        for p in points
+    ]
+    return ListResponse(data=data, meta=Meta(count=len(data), sources=[RONE_SOURCE]))
 
 
 @router.get(

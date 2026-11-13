@@ -71,6 +71,14 @@ class RankingEntry:
 
 
 @dataclass(slots=True)
+class TrendPoint:
+    date: str
+    win_rate: float = 0.0
+    ban_rate: float = 0.0
+    pick_rate: float = 0.0
+
+
+@dataclass(slots=True)
 class PlayerProfileData:
     player_id: str
     zone_id: str

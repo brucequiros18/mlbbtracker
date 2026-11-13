@@ -29,7 +29,8 @@ versions use Semantic Versioning.
   (roles, lanes, skills, tiers, patches); `NullPlayerProvider` → `NOT_SUPPORTED`.
 - `HeroService` merge/normalize with in-process TTL cache; attribution envelope.
 - Endpoints: `/api/v1/health`, `/health/providers`, `/heroes`,
-  `/heroes/rankings`, `/heroes/{id}`, `/players/{player_id}/{zone_id}`.
+  `/heroes/rankings`, `/heroes/{id}`, `/heroes/{id}/trends`,
+  `/players/{player_id}/{zone_id}`.
 - Typed error envelope, CORS, OpenAPI, structured logging, `/docs`.
 - Tests: 13 offline `pytest` tests + live smoke script.
 - `database/schema.sql` (PostgreSQL/Supabase) and `DATABASE_SCHEMA.md`.
@@ -38,3 +39,13 @@ versions use Semantic Versioning.
 - Player statistics are intentionally **not** served: no permitted public source
   exposes them. The app shows a clear explanation and never fabricates data.
 - MLBB Tracker is unofficial and not affiliated with Moonton.
+
+## [0.2.0] — 2026-11-14
+
+### Added — Milestone 5: hero trend analytics
+- Backend: `HeroTrendProvider` interface + Rone Arena adapter; cached
+  `GET /api/v1/heroes/{id}/trends?days=` returning an ascending daily timeline.
+- Mobile: `HeroTrendPoint` model, `HeroRepository.heroTrends()`, and a
+  win-rate line chart (`fl_chart`) on the hero detail screen. Trend failures
+  degrade to a caption instead of breaking the page.
+- Tests: 15 backend tests (was 13); `flutter analyze` clean.

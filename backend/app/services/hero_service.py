@@ -14,7 +14,7 @@ from app.core.cache import cache
 from app.core.config import Settings
 from app.core.errors import AppError, NotFoundError
 from app.core.logging import get_logger
-from app.integrations.models import HeroRef, normalize_hero_name
+from app.integrations.models import HeroRef, TrendPoint, normalize_hero_name
 from app.integrations.provider_factory import Providers
 from app.schemas.hero import (
     HeroDetail,
@@ -128,6 +128,23 @@ class HeroService:
         rows.sort(key=lambda r: getattr(r, sort_field, r.win_rate), reverse=True)
         cache.set(key, rows, self._settings.cache_ttl_rankings)
         return rows
+
+    # — Trend timeline ——————————————————————————————————————————
+    async def trends(self, identifier: str, *, days: int = 7) -> list[TrendPoint]:
+        catalog = await self._catalog_raw()
+        match = self._resolve(catalog, identifier)
+        if match is None:
+            raise NotFoundError(f"No hero matches '{identifier}'.")
+        rone = self._providers.rone
+        if rone is None:
+            return []
+        key = f"trends:v1:{match.id}:{days}"
+        cached = cache.get(key)
+        if isinstance(cached, list):
+            return cached
+        points = await rone.fetch_trends(match.id, days=days)
+        cache.set(key, points, self._settings.cache_ttl_rankings)
+        return points
 
     # — Detail ————————————————————————————————————————————————
     async def hero(self, identifier: str) -> HeroDetail:

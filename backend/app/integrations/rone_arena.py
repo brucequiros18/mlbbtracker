@@ -19,9 +19,13 @@ import httpx
 from app.core.config import Settings
 from app.core.errors import ProviderError
 from app.core.logging import get_logger
-from app.integrations.base_provider import HeroIdentityProvider, HeroRankingProvider
+from app.integrations.base_provider import (
+    HeroIdentityProvider,
+    HeroRankingProvider,
+    HeroTrendProvider,
+)
 from app.integrations.http import get_json
-from app.integrations.models import HeroRef, RankingEntry
+from app.integrations.models import HeroRef, RankingEntry, TrendPoint
 
 logger = get_logger(__name__)
 
@@ -29,7 +33,7 @@ _PAGE_SIZE = 50
 _MAX_PAGES = 8
 
 
-class RoneArenaProvider(HeroIdentityProvider, HeroRankingProvider):
+class RoneArenaProvider(HeroIdentityProvider, HeroRankingProvider, HeroTrendProvider):
     name = "rone_arena"
 
     def __init__(self, client: httpx.AsyncClient, settings: Settings) -> None:
@@ -104,6 +108,34 @@ class RoneArenaProvider(HeroIdentityProvider, HeroRankingProvider):
             )
         logger.info("rone: fetched %d ranking rows (days=%s rank=%s)", len(entries), days, rank)
         return entries
+
+    # — Per-hero trend timeline —————————————————————————————————
+    async def fetch_trends(self, hero_id: int, *, days: int = 7) -> list[TrendPoint]:
+        payload = await get_json(
+            self._client,
+            f"{self._base}/heroes/{hero_id}/trends",
+            params={"rank": "all", "past-days": days, "size": 1, "lang": "en"},
+        )
+        data = _data(payload)
+        if data is None:
+            raise ProviderError("Rone Arena 'hero trends' payload was malformed.")
+        records = data.get("records") or []
+        if not records:
+            return []
+        points = (((records[0] or {}).get("data") or {}).get("win_rate")) or []
+        out = [
+            TrendPoint(
+                date=str(p.get("date") or ""),
+                win_rate=float(p.get("win_rate") or 0.0),
+                ban_rate=float(p.get("ban_rate") or 0.0),
+                pick_rate=float(p.get("app_rate") or 0.0),
+            )
+            for p in points
+            if isinstance(p, dict) and p.get("date")
+        ]
+        out.sort(key=lambda p: p.date)  # provider returns newest-first
+        logger.info("rone: fetched %d trend points for hero %s", len(out), hero_id)
+        return out
 
 
 def _data(payload: Any) -> dict[str, Any] | None:

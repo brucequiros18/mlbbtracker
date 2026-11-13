@@ -11,6 +11,7 @@ import '../../../shared/widgets/stat_tile.dart';
 import '../../saved/presentation/favorites_providers.dart';
 import '../domain/hero.dart';
 import 'hero_providers.dart';
+import 'trend_chart.dart';
 
 class HeroDetailScreen extends ConsumerWidget {
   const HeroDetailScreen({super.key, required this.identifier});
@@ -98,6 +99,8 @@ class _HeroDetailBody extends ConsumerWidget {
             ),
           ),
         ],
+        const SizedBox(height: AppSpacing.xl),
+        _TrendSection(heroId: hero.id),
         if (hero.skills.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
           const SectionHeader(title: 'Skills'),
@@ -144,13 +147,42 @@ class _HeroDetailBody extends ConsumerWidget {
   }
 }
 
+/// Win-rate timeline. A trend failure degrades to a caption; it must never
+/// take down the rest of the hero page.
+class _TrendSection extends ConsumerWidget {
+  const _TrendSection({required this.heroId});
+
+  final int heroId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trends = ref.watch(heroTrendsProvider(TrendQuery(heroId.toString(), 7)));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader(
+          title: 'Win Rate Trend',
+          subtitle: 'Daily · last 7 days · all ranks',
+        ),
+        trends.when(
+          loading: () => const SizedBox(height: 120, child: LoadingView()),
+          error: (e, _) => Text(
+            'Trend data is unavailable right now.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          data: (points) => AppCard(child: HeroTrendChart(points: points)),
+        ),
+      ],
+    );
+  }
+}
+
 class _RelationList extends StatelessWidget {
   const _RelationList({required this.title, required this.names, required this.color});
 
   final String title;
   final List<String> names;
   final Color color;
-
   @override
   Widget build(BuildContext context) {
     return AppCard(

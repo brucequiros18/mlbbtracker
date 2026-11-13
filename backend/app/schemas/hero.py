@@ -43,6 +43,13 @@ class HeroDetail(BaseModel):
     rank_stat: HeroRankStat | None = None
 
 
+class HeroTrendPoint(BaseModel):
+    date: str
+    win_rate: float
+    ban_rate: float
+    pick_rate: float
+
+
 class HeroRanking(BaseModel):
     id: int
     name: str

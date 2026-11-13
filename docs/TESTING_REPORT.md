@@ -12,12 +12,12 @@ cd backend
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Result: **13 passed.**
+Result: **15 passed.**
 
 | Test file | Covers |
 |---|---|
 | `test_health.py` | `/health` capabilities; index metadata |
-| `test_heroes.py` | list + role filter; rankings sorted; detail by slug & numeric id; relations resolved; 404 envelope |
+| `test_heroes.py` | list + role filter; rankings sorted; detail by slug & numeric id; relations resolved; trends sorted ascending; trends 404 envelope |
 | `test_players.py` | `501 NOT_SUPPORTED` envelope; `422` digit validation |
 | `test_providers.py` | `normalize_hero_name`; Rone Arena parsing (refs, rankings); MLBBDex parsing (catalog, detail, rankings) via `httpx.MockTransport` |
 
@@ -44,6 +44,16 @@ rone: fetched 133 ranking rows (days=7 rank=all)
 [player]   correctly unsupported -> NOT_SUPPORTED
 ```
 
+## 2b. Backend — live trends (network)
+
+`HeroService.trends('khufra', days=7)` → **7 real daily points**, ascending:
+
+```
+2026-11-05  win=54.70%  ban=2.09%
+2026-11-08  win=54.83%  ban=2.13%
+2026-11-11  win=54.99%  ban=2.04%
+```
+
 ## 3. Backend — HTTP end-to-end
 
 Uvicorn on `127.0.0.1:8077`; real requests:
@@ -64,7 +74,8 @@ flutter test        # All tests passed! (1)
 ```
 
 `test/widget_test.dart` renders the Heroes screen against a fake
-`HeroRepository` and asserts the roster appears.
+`HeroRepository` (which also implements the trend interface) and asserts the
+roster appears.
 
 ## 5. Not yet tested (honest gaps)
 

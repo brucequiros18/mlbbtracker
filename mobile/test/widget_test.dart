@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mlbb_tracker/features/heroes/domain/hero.dart';
+import 'package:mlbb_tracker/features/heroes/domain/hero.dart' show HeroDetail, HeroRankStat, HeroSummary, HeroTrendPoint;
 import 'package:mlbb_tracker/features/heroes/domain/hero_repository.dart';
 import 'package:mlbb_tracker/features/heroes/presentation/hero_providers.dart';
 import 'package:mlbb_tracker/features/heroes/presentation/heroes_screen.dart';
@@ -26,6 +26,13 @@ class _FakeHeroRepository implements HeroRepository {
     String sortField = 'win_rate',
   }) async =>
       const [HeroRankStat(id: 1, name: 'Masha', winRate: 0.61, banRate: 0.42, pickRate: 0.55)];
+
+  @override
+  Future<List<HeroTrendPoint>> heroTrends(String identifier, {int days = 7}) async =>
+      const [
+        HeroTrendPoint(date: '2026-11-10', winRate: 0.54, banRate: 0.02, pickRate: 0.003),
+        HeroTrendPoint(date: '2026-11-11', winRate: 0.55, banRate: 0.02, pickRate: 0.003),
+      ];
 }
 
 void main() {

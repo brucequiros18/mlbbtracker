@@ -11,7 +11,7 @@ before the next begins.
 | 2 | Flutter foundation (theme, nav, Home, Player Search) | ✅ Complete |
 | 3 | Backend foundation (FastAPI, provider abstraction, health) | ✅ Complete |
 | 4 | Player integration | ⛔ Blocked (no permitted source) — UI + provider ready |
-| 5 | Advanced analytics (rankings, hero detail, charts) | 🟡 Core done; historical snapshots pending DB |
+| 5 | Advanced analytics (rankings, hero detail, charts) | 🟡 Rankings + **7-day win-rate trend chart** done; historical snapshots pending DB |
 | 6 | Additional features (heroes DB, esports, favourites, comparison) | 🟡 Heroes + favourites done; esports/comparison pending |
 | 7 | QA (automated tests, device testing, perf, security) | 🟡 Automated tests green; device pass pending |
 | 8 | Release prep (APK, icon, metadata) | ⬜ Not started |
@@ -31,8 +31,8 @@ before the next begins.
 
 1. **Milestone 3+ — persistence**: Alembic migrations; move `api_cache` and hero
    snapshots into Postgres; scheduled refresh job; provider health log.
-2. **Milestone 5 — analytics**: historical win-rate timeline chart (FL Chart),
-   patch-over-patch deltas, hero trend screens.
+2. **Milestone 5 — analytics**: ✅ 7-day win-rate trend (FL Chart) shipped.
+   Remaining: longer windows, patch-over-patch deltas, hero comparison.
 3. **Milestone 6 — breadth**: esports standings screens, player comparison,
    hero counter/synergy explorer.
 4. **Milestone 7 — QA**: run on `Medium_Phone_API_36.1`; integration tests app↔API;
