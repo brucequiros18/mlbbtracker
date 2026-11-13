@@ -77,7 +77,35 @@ flutter test        # All tests passed! (1)
 `HeroRepository` (which also implements the trend interface) and asserts the
 roster appears.
 
-## 5. Not yet tested (honest gaps)
+## 5. Browser verification (Flutter web, release build)
+
+Built with `flutter build web --release` and served statically; driven with
+Playwright (headless Chromium, 430×900):
+
+| Scenario | Evidence |
+|---|---|
+| Home renders real data | Screenshot shows Masha 61.1%, Marcel 57.5%, Argus 56.7% with portraits |
+| Hero detail | Portrait, roles, ranked stats, skills |
+| Win-rate trend chart | FL Chart line 61.6% → 58.2% (11-05 → 11-11) |
+| Console errors | **0** across all runs |
+| Backend calls from browser | `/heroes/rankings`, `/heroes/88`, `/heroes/88/trends` — all 200 |
+
+Two real defects were found and fixed by this pass:
+
+1. **Wire-format mismatch** — the API emitted `snake_case` while Dart models
+   parsed `camelCase`, so every numeric statistic rendered as `0.0%` and hero
+   portraits fell back to initials. Fixed with a camelCase alias generator on
+   all API schemas (`ApiModel`), verified by the wire-key check
+   (`banRate, headImage, id, name, pickRate, slug, tier, winRate`).
+2. **Null cast on hero detail** — the nested `rankStat` object carries only the
+   three rates, but the Dart model shared with ranking rows required `id`/`name`,
+   throwing `null is not a subtype of num` in release mode. Fixed by splitting
+   out `HeroRankSummary` for the embedded stat.
+
+Also fixed a `RenderFlex` overflow (5.2px) on the hero grid card surfaced by the
+running app.
+
+## 6. Not yet tested (honest gaps)
 
 - **On-device run** on `Medium_Phone_API_36.1` (Milestone 7).
 - **Integration tests** app↔API (contract tests) — planned.

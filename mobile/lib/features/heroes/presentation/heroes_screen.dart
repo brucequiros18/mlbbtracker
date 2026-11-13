@@ -64,7 +64,8 @@ class HeroesScreen extends ConsumerWidget {
                     crossAxisCount: 2,
                     mainAxisSpacing: AppSpacing.md,
                     crossAxisSpacing: AppSpacing.md,
-                    childAspectRatio: 1.55,
+                    // Tall enough for avatar + name + role pill without overflow.
+                    childAspectRatio: 1.22,
                   ),
                   itemCount: list.length,
                   itemBuilder: (_, i) => _HeroCard(hero: list[i]),
@@ -87,6 +88,7 @@ class _HeroCard extends StatelessWidget {
     final palette = AppPalette.of(context);
     return AppCard(
       onTap: () => context.push('/hero/${hero.slug.isNotEmpty ? hero.slug : hero.id}'),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -42,6 +42,18 @@ versions use Semantic Versioning.
 
 ## [0.2.0] — 2026-11-14
 
+### Added — Flutter web target
+- `web/` platform added; `ApiConfig.baseUrl` is now platform-aware
+  (Android emulator → `10.0.2.2`, web/desktop → `localhost`), still overridable
+  with `--dart-define=API_BASE_URL`.
+
+### Fixed — wire format & hero detail parsing
+- API schemas now emit **camelCase** (`winRate`, `headImage`, …) to match the
+  Dart models; previously every statistic rendered as `0.0%`.
+- Split `HeroRankSummary` out of `HeroRankStat` for the embedded detail stat,
+  fixing a `null is not a subtype of num` crash on hero detail.
+- Fixed a 5.2px `RenderFlex` overflow on the hero grid card.
+
 ### Added — Milestone 5: hero trend analytics
 - Backend: `HeroTrendProvider` interface + Rone Arena adapter; cached
   `GET /api/v1/heroes/{id}/trends?days=` returning an ascending daily timeline.

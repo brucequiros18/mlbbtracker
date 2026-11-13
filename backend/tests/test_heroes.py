@@ -13,6 +13,7 @@ def test_list_heroes_merges_providers(client):
     assert khufra["slug"] == "khufra"
     assert khufra["roles"] == ["Tank"]
     assert khufra["tier"] == "A+"
+    assert khufra["headImage"] is not None  # camelCase wire format
     assert body["meta"]["count"] == len(body["data"])
     assert {s["name"] for s in body["meta"]["sources"]} == {"Rone Arena API", "MLBBDex"}
 
@@ -28,7 +29,7 @@ def test_rankings_sorted_by_win_rate(client):
     assert resp.status_code == 200
     rows = resp.json()["data"]
     assert rows[0]["name"] == "Masha"
-    assert rows[0]["win_rate"] > rows[1]["win_rate"]
+    assert rows[0]["winRate"] > rows[1]["winRate"]
     assert rows[1]["id"] == 78
 
 
@@ -39,7 +40,7 @@ def test_hero_trends_sorted_ascending(client):
     dates = [p["date"] for p in body["data"]]
     assert dates == sorted(dates)
     assert body["meta"]["count"] == 2
-    assert body["data"][0]["win_rate"] < body["data"][1]["win_rate"]
+    assert body["data"][0]["winRate"] < body["data"][1]["winRate"]
 
 
 def test_hero_trends_not_found(client):
@@ -54,10 +55,10 @@ def test_hero_detail_by_slug(client):
     hero = resp.json()["data"]
     assert hero["id"] == 78
     assert hero["skills"][0]["name"] == "Spell Curse"
-    assert hero["rank_stat"]["win_rate"] > 0
+    assert hero["rankStat"]["winRate"] > 0
     # relations resolved from Rone ids to names
-    assert "Balmond" in hero["strong_against"]
-    assert "Ruby" in hero["weak_against"]
+    assert "Balmond" in hero["strongAgainst"]
+    assert "Ruby" in hero["weakAgainst"]
 
 
 def test_hero_detail_by_numeric_id(client):

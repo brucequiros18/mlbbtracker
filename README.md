@@ -49,8 +49,13 @@ Live provider smoke test (network):
 ```powershell
 cd mobile
 flutter pub get
+
 # Android emulator reaches the host backend at 10.0.2.2 (the default).
 flutter run
+
+# Web (Chrome) — uses http://localhost:8000 by default.
+flutter run -d chrome --web-port 8090
+
 # Physical device on your LAN:
 flutter run --dart-define=API_BASE_URL=http://<your-ip>:8000
 ```

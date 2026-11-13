@@ -43,7 +43,8 @@ class _HeroDetailBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = AppPalette.of(context);
-    final favorite = ref.watch(favoriteHeroesProvider).contains(hero.id);
+    final heroId = hero.id ?? 0;
+    final favorite = ref.watch(favoriteHeroesProvider).contains(heroId);
     final stat = hero.rankStat;
 
     return ListView(
@@ -72,7 +73,7 @@ class _HeroDetailBody extends ConsumerWidget {
                 ),
               ),
               IconButton(
-                onPressed: () => ref.read(favoriteHeroesProvider.notifier).toggle(hero.id),
+                onPressed: () => ref.read(favoriteHeroesProvider.notifier).toggle(heroId),
                 icon: Icon(
                   favorite ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
                   color: favorite ? palette.accent : palette.textMuted,
@@ -100,7 +101,7 @@ class _HeroDetailBody extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: AppSpacing.xl),
-        _TrendSection(heroId: hero.id),
+        _TrendSection(heroId: heroId),
         if (hero.skills.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
           const SectionHeader(title: 'Skills'),

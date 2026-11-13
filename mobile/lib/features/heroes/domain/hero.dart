@@ -34,6 +34,28 @@ class HeroSummary {
   String get primaryRole => roles.isNotEmpty ? roles.first : 'Unknown';
 }
 
+/// Ranked rates embedded in a hero detail. Deliberately separate from
+/// [HeroRankStat]: the detail payload carries only the three rates, and a
+/// shared model would force a null cast on `id`/`name`.
+@immutable
+class HeroRankSummary {
+  const HeroRankSummary({
+    required this.winRate,
+    required this.banRate,
+    required this.pickRate,
+  });
+
+  final double winRate;
+  final double banRate;
+  final double pickRate;
+
+  factory HeroRankSummary.fromJson(Map<String, dynamic> json) => HeroRankSummary(
+        winRate: (json['winRate'] as num?)?.toDouble() ?? 0,
+        banRate: (json['banRate'] as num?)?.toDouble() ?? 0,
+        pickRate: (json['pickRate'] as num?)?.toDouble() ?? 0,
+      );
+}
+
 /// A hero's competitive statistics for a rank window.
 @immutable
 class HeroRankStat {
@@ -121,7 +143,9 @@ class HeroDetail {
     this.rankStat,
   });
 
-  final int id;
+  /// In-game id; nullable to match the API contract, which allows it to be
+  /// absent when identity data is unavailable.
+  final int? id;
   final String name;
   final String slug;
   final List<String> roles;
@@ -131,10 +155,10 @@ class HeroDetail {
   final List<HeroSkill> skills;
   final List<String> strongAgainst;
   final List<String> weakAgainst;
-  final HeroRankStat? rankStat;
+  final HeroRankSummary? rankStat;
 
   factory HeroDetail.fromJson(Map<String, dynamic> json) => HeroDetail(
-        id: (json['id'] as num).toInt(),
+        id: (json['id'] as num?)?.toInt(),
         name: json['name'] as String,
         slug: json['slug'] as String? ?? '',
         roles: (json['roles'] as List?)?.map((e) => e.toString()).toList() ?? const [],
@@ -151,6 +175,6 @@ class HeroDetail {
             (json['weakAgainst'] as List?)?.map((e) => e.toString()).toList() ?? const [],
         rankStat: json['rankStat'] == null
             ? null
-            : HeroRankStat.fromJson(json['rankStat'] as Map<String, dynamic>),
+            : HeroRankSummary.fromJson(json['rankStat'] as Map<String, dynamic>),
       );
 }

@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.integrations.models import HeroDetailData, HeroRef, RankingEntry
+from app.schemas.common import ApiModel
 
 
-class HeroSummary(BaseModel):
+class HeroSummary(ApiModel):
     id: int
     name: str
     slug: str
@@ -17,18 +18,18 @@ class HeroSummary(BaseModel):
     tier: str | None = None
 
 
-class HeroSkill(BaseModel):
+class HeroSkill(ApiModel):
     name: str
     description: str
 
 
-class HeroRankStat(BaseModel):
+class HeroRankStat(ApiModel):
     win_rate: float
     ban_rate: float
     pick_rate: float
 
 
-class HeroDetail(BaseModel):
+class HeroDetail(ApiModel):
     id: int | None
     name: str
     slug: str
@@ -43,14 +44,14 @@ class HeroDetail(BaseModel):
     rank_stat: HeroRankStat | None = None
 
 
-class HeroTrendPoint(BaseModel):
+class HeroTrendPoint(ApiModel):
     date: str
     win_rate: float
     ban_rate: float
     pick_rate: float
 
 
-class HeroRanking(BaseModel):
+class HeroRanking(ApiModel):
     id: int
     name: str
     slug: str | None = None

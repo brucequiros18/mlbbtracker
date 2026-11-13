@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
-
 from app.integrations.models import PlayerProfileData
+from app.schemas.common import ApiModel
 
 
-class PlayerProfile(BaseModel):
+class PlayerProfile(ApiModel):
     player_id: str
     zone_id: str
     ign: str
