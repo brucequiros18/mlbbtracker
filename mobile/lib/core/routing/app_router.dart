@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/esports/presentation/esports_screen.dart';
 import '../../features/heroes/presentation/hero_detail_screen.dart';
 import '../../features/heroes/presentation/heroes_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
@@ -42,5 +43,6 @@ final appRouter = GoRouter(
       builder: (context, state) =>
           HeroDetailScreen(identifier: state.pathParameters['identifier']!),
     ),
+    GoRoute(path: '/esports', builder: (_, _) => const EsportsScreen()),
   ],
 );

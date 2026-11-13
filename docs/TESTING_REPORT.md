@@ -12,14 +12,19 @@ cd backend
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Result: **15 passed.**
+Result: **18 passed.**
 
 | Test file | Covers |
 |---|---|
 | `test_health.py` | `/health` capabilities; index metadata |
 | `test_heroes.py` | list + role filter; rankings sorted; detail by slug & numeric id; relations resolved; trends sorted ascending; trends 404 envelope |
 | `test_players.py` | `501 NOT_SUPPORTED` envelope; `422` digit validation |
+| `test_esports.py` | standings rows + camelCase keys; rank ordering; unknown league `422` |
 | `test_providers.py` | `normalize_hero_name`; Rone Arena parsing (refs, rankings); MLBBDex parsing (catalog, detail, rankings) via `httpx.MockTransport` |
+
+> A fixture gap briefly let the esports tests reach the live network (they
+> asserted real MPL ID row counts). Fixed by overriding `get_esports_service`;
+> the suite is offline again and that slip is noted here for honesty.
 
 Providers are replaced with fakes via FastAPI dependency overrides, so tests
 never hit the network and never depend on a third-party service.

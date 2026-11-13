@@ -52,6 +52,13 @@ Returns `HeroDetail`:
  "rank_stat":{"win_rate":0.546321,"ban_rate":0.020853,"pick_rate":0.003423}}
 ```
 
+### `GET /esports/{league}/standings`
+`league` ∈ `id | ph | my | kh` (MPL Indonesia, Philippines, Malaysia, Cambodia).
+```json
+{"rank":1,"teamCode":"TLID","teamName":"TEAM LIQUID ID","logo":"https://…",
+ "matchPoint":12,"matchWins":12,"matchLosses":4,"netGameWin":15,"gameWins":26,"gameLosses":11}
+```
+
 ### `GET /players/{player_id}/{zone_id}`
 Numeric ids only. Returns **`501 NOT_SUPPORTED`** — no permitted public source
 exposes player statistics. Body:

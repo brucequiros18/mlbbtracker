@@ -71,6 +71,20 @@ class RankingEntry:
 
 
 @dataclass(slots=True)
+class EsportsStanding:
+    rank: int
+    team_code: str
+    team_name: str
+    logo: str | None = None
+    match_point: int = 0
+    match_wins: int = 0
+    match_losses: int = 0
+    net_game_win: int = 0
+    game_wins: int = 0
+    game_losses: int = 0
+
+
+@dataclass(slots=True)
 class TrendPoint:
     date: str
     win_rate: float = 0.0

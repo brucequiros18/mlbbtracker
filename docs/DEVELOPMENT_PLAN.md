@@ -12,7 +12,7 @@ before the next begins.
 | 3 | Backend foundation (FastAPI, provider abstraction, health) | ✅ Complete |
 | 4 | Player integration | ⛔ Blocked (no permitted source) — UI + provider ready |
 | 5 | Advanced analytics (rankings, hero detail, charts) | 🟡 Rankings + **7-day win-rate trend chart** done; historical snapshots pending DB |
-| 6 | Additional features (heroes DB, esports, favourites, comparison) | 🟡 Heroes + favourites done; esports/comparison pending |
+| 6 | Additional features (heroes DB, esports, favourites, comparison) | 🟡 Heroes + favourites + **esports standings** done; comparison pending |
 | 7 | QA (automated tests, device testing, perf, security) | 🟡 Automated tests green; device pass pending |
 | 8 | Release prep (APK, icon, metadata) | ⬜ Not started |
 

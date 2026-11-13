@@ -20,12 +20,13 @@ from app.core.config import Settings
 from app.core.errors import ProviderError
 from app.core.logging import get_logger
 from app.integrations.base_provider import (
+    EsportsStandingsProvider,
     HeroIdentityProvider,
     HeroRankingProvider,
     HeroTrendProvider,
 )
 from app.integrations.http import get_json
-from app.integrations.models import HeroRef, RankingEntry, TrendPoint
+from app.integrations.models import EsportsStanding, HeroRef, RankingEntry, TrendPoint
 
 logger = get_logger(__name__)
 
@@ -33,7 +34,9 @@ _PAGE_SIZE = 50
 _MAX_PAGES = 8
 
 
-class RoneArenaProvider(HeroIdentityProvider, HeroRankingProvider, HeroTrendProvider):
+class RoneArenaProvider(
+    HeroIdentityProvider, HeroRankingProvider, HeroTrendProvider, EsportsStandingsProvider
+):
     name = "rone_arena"
 
     def __init__(self, client: httpx.AsyncClient, settings: Settings) -> None:
@@ -135,6 +138,41 @@ class RoneArenaProvider(HeroIdentityProvider, HeroRankingProvider, HeroTrendProv
         ]
         out.sort(key=lambda p: p.date)  # provider returns newest-first
         logger.info("rone: fetched %d trend points for hero %s", len(out), hero_id)
+        return out
+
+    # — Esports standings ———————————————————————————————————————
+    async def fetch_standings(self, league: str) -> list[EsportsStanding]:
+        # This endpoint returns a bare {"standings": [...]} object rather than
+        # the {"code": 0, "data": {...}} envelope used by the game-data routes.
+        payload = await get_json(self._client, f"{self._base}/esports/{league}/standings")
+        rows = payload.get("standings") if isinstance(payload, dict) else None
+        if rows is None:
+            raise ProviderError("Rone Arena 'esports standings' payload was malformed.")
+
+        out: list[EsportsStanding] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            team = row.get("team") or {}
+            match_wl = row.get("match_wl") or {}
+            game_wl = row.get("game_wl") or {}
+            code = str(team.get("name") or "")
+            out.append(
+                EsportsStanding(
+                    rank=int(row.get("rank") or 0),
+                    team_code=code,
+                    # `full_name` is null for some leagues (e.g. MPL PH).
+                    team_name=str(team.get("full_name") or code),
+                    logo=team.get("logo"),
+                    match_point=int(row.get("match_point") or 0),
+                    match_wins=int(match_wl.get("win") or 0),
+                    match_losses=int(match_wl.get("lose") or 0),
+                    net_game_win=int(row.get("net_game_win") or 0),
+                    game_wins=int(game_wl.get("win") or 0),
+                    game_losses=int(game_wl.get("lose") or 0),
+                )
+            )
+        logger.info("rone: fetched %d standings rows for %s", len(out), league)
         return out
 
 

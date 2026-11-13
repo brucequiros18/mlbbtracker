@@ -62,3 +62,22 @@ class ApiException implements Exception {
   @override
   String toString() => 'ApiException($kind, $message)';
 }
+
+/// Maps any error to user-facing copy. Never leaks `toString()` internals to
+/// the UI.
+String describeError(Object error) {
+  if (error is ApiException) {
+    return switch (error.kind) {
+      ApiErrorKind.network =>
+        'Cannot reach the MLBB Tracker server. Check your connection and that the backend is running.',
+      ApiErrorKind.timeout => 'The server took too long to respond. Please try again.',
+      ApiErrorKind.notFound => "That content isn't available. It may not exist or isn't covered by the data source.",
+      ApiErrorKind.validation => 'The request was invalid. Please adjust it and try again.',
+      ApiErrorKind.unsupported =>
+        "This feature isn't available from public MLBB data sources yet.",
+      ApiErrorKind.server => 'The server had a problem. Please try again shortly.',
+      ApiErrorKind.unknown => error.message,
+    };
+  }
+  return 'Something went wrong. Please try again.';
+}

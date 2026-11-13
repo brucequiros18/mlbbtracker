@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_exception.dart' show describeError;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_card.dart';
@@ -27,7 +28,7 @@ class HeroDetailScreen extends ConsumerWidget {
       body: detail.when(
         loading: () => const LoadingView(message: 'Loading hero…'),
         error: (e, _) => ErrorView(
-          message: e.toString(),
+          message: describeError(e),
           onRetry: () => ref.invalidate(heroDetailProvider(identifier)),
         ),
         data: (hero) => _HeroDetailBody(hero: hero),

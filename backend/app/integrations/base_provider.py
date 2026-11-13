@@ -14,6 +14,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from app.integrations.models import (
+    EsportsStanding,
     HeroDetailData,
     HeroMeta,
     HeroRef,
@@ -54,6 +55,13 @@ class HeroTrendProvider(ABC):
 
     @abstractmethod
     async def fetch_trends(self, hero_id: int, *, days: int = 7) -> list[TrendPoint]: ...
+
+
+class EsportsStandingsProvider(ABC):
+    name: str = "esports"
+
+    @abstractmethod
+    async def fetch_standings(self, league: str) -> list[EsportsStanding]: ...
 
 
 class PlayerProvider(ABC):

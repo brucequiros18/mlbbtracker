@@ -40,6 +40,18 @@ versions use Semantic Versioning.
   exposes them. The app shows a clear explanation and never fabricates data.
 - MLBB Tracker is unofficial and not affiliated with Moonton.
 
+## [0.3.0] — 2026-11-14
+
+### Added — Milestone 6: esports standings
+- Backend: `EsportsStandingsProvider` + Rone Arena adapter; cached
+  `GET /api/v1/esports/{league}/standings` for MPL ID/PH/MY/KH.
+- Mobile: esports feature (model, repository, providers, screen) with league
+  chips, team logos and colour-coded game differential; reachable from Home and
+  via `/#/esports` deep link.
+- Router switched to hash URLs so the app can be hosted statically.
+- Error copy: UI now shows friendly messages instead of `toString()`.
+- Tests: 18 backend tests.
+
 ## [0.2.0] — 2026-11-14
 
 ### Added — Flutter web target

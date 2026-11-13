@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_exception.dart' show describeError;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_card.dart';
@@ -61,7 +62,7 @@ class LeaderboardsScreen extends ConsumerWidget {
             child: rankings.when(
               loading: () => const LoadingView(message: 'Loading rankings…'),
               error: (e, _) => ErrorView(
-                message: e.toString(),
+                message: describeError(e),
                 onRetry: () => ref.invalidate(heroRankingsProvider),
               ),
               data: (list) {

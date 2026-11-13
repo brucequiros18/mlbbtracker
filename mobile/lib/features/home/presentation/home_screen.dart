@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/config/api_config.dart';
+import '../../../core/network/api_exception.dart' show describeError;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_card.dart';
@@ -49,7 +50,7 @@ class HomeScreen extends ConsumerWidget {
                   child: LoadingView(),
                 ),
                 error: (e, _) => ErrorView(
-                  message: e.toString(),
+                  message: describeError(e),
                   onRetry: () => ref.invalidate(heroRankingsProvider),
                 ),
                 data: (stats) {
@@ -94,6 +95,13 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _ExploreTile(
+                icon: Icons.emoji_events_rounded,
+                title: 'Esports',
+                subtitle: 'MPL ID · PH · MY · KH standings',
+                onTap: () => context.push('/esports'),
               ),
               const SizedBox(height: AppSpacing.lg),
               Container(
