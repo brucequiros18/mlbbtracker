@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     cache_ttl_detail: int = 6 * 60 * 60
     cache_ttl_health: int = 60
 
+    # Database. Default is a local SQLite file for development; point this at
+    # a Supabase/Postgres URL for production (models/migrations are shared).
+    database_url: str = "sqlite:///./mlbb_tracker.db"
+
     cors_origins: list[str] = ["*"]
 
 

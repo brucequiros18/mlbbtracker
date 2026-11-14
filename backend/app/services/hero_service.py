@@ -10,14 +10,20 @@ Responsibilities:
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
+from sqlalchemy.orm import Session
+
 from app.core.cache import cache
 from app.core.config import Settings
 from app.core.errors import AppError, NotFoundError
 from app.core.logging import get_logger
+from app.db.models import HeroSnapshot
 from app.integrations.models import HeroRef, TrendPoint, normalize_hero_name
 from app.integrations.provider_factory import Providers
 from app.schemas.hero import (
     HeroDetail,
+    HeroHistoryPoint,
     HeroRankStat,
     HeroRanking,
     HeroSummary,
@@ -29,9 +35,26 @@ logger = get_logger(__name__)
 
 
 class HeroService:
-    def __init__(self, providers: Providers, settings: Settings) -> None:
+    """Hero data service with optional snapshot persistence.
+
+    ``recorder`` (when provided) is called with the raw ranking entries after
+    every *fresh* provider fetch, storing daily snapshots. ``session_factory``
+    powers the history read path. Both are optional so unit tests can run
+    without a database.
+    """
+
+    def __init__(
+        self,
+        providers: Providers,
+        settings: Settings,
+        *,
+        recorder: Callable[[list], int] | None = None,
+        session_factory: Callable[[], Session] | None = None,
+    ) -> None:
         self._providers = providers
         self._settings = settings
+        self._recorder = recorder
+        self._session_factory = session_factory
 
     # — Catalog ————————————————————————————————————————————————
     async def catalog(self, *, role: str | None = None, lane: str | None = None) -> list[HeroSummary]:
@@ -127,7 +150,30 @@ class HeroService:
 
         rows.sort(key=lambda r: getattr(r, sort_field, r.win_rate), reverse=True)
         cache.set(key, rows, self._settings.cache_ttl_rankings)
+
+        # Persist a daily snapshot of the raw provider entries (7-day window
+        # only — the canonical analytics window). Failures never break the API.
+        if self._recorder is not None and days == 7:
+            try:
+                recorded = self._recorder(entries)
+                if recorded:
+                    logger.info("snapshots: recorded %d hero rows", recorded)
+            except Exception:  # noqa: BLE001 — persistence must not take the API down
+                logger.exception("snapshots: recording failed")
+
         return rows
+
+    # — Recorded history (from our own database) ————————————————————
+    async def history(self, identifier: str, *, days: int = 7) -> list[HeroSnapshot]:
+        if self._session_factory is None:
+            return []
+        catalog = await self._catalog_raw()
+        match = self._resolve(catalog, identifier)
+        if match is None:
+            raise NotFoundError(f"No hero matches '{identifier}'.")
+        from app.db.repo import history_for_hero
+
+        return history_for_hero(self._session_factory, match.id, days=days)
 
     # — Trend timeline ——————————————————————————————————————————
     async def trends(self, identifier: str, *, days: int = 7) -> list[TrendPoint]:

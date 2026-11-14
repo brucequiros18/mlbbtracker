@@ -52,6 +52,19 @@ Returns `HeroDetail`:
  "rank_stat":{"win_rate":0.546321,"ban_rate":0.020853,"pick_rate":0.003423}}
 ```
 
+### `GET /heroes/{identifier}/history`
+Recorded daily snapshots — **our own observation history**, not provider data.
+A snapshot row is written whenever the backend fetches the 7-day rankings live
+(one per hero per UTC day, idempotent). Returns `count: 0` with an explanatory
+`meta.note` until the backend has recorded at least one fetch. Empty `sources`
+by design: this data comes from this backend's database.
+```json
+{"capturedOn":"2026-11-14","winRate":0.606971,"banRate":0.048624,
+ "pickRate":0.018798,"tier":"S+","rankPosition":1}
+```
+Populate the table with `backend/scripts/record_snapshot.py` (safe to schedule;
+one row per hero per UTC day).
+
 ### `GET /esports/{league}/standings`
 `league` ∈ `id | ph | my | kh` (MPL Indonesia, Philippines, Malaysia, Cambodia).
 ```json

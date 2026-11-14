@@ -12,7 +12,7 @@ cd backend
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Result: **18 passed.**
+Result: **23 passed.**
 
 | Test file | Covers |
 |---|---|
@@ -20,6 +20,7 @@ Result: **18 passed.**
 | `test_heroes.py` | list + role filter; rankings sorted; detail by slug & numeric id; relations resolved; trends sorted ascending; trends 404 envelope |
 | `test_players.py` | `501 NOT_SUPPORTED` envelope; `422` digit validation |
 | `test_esports.py` | standings rows + camelCase keys; rank ordering; unknown league `422` |
+| `test_history.py` | rankings fetch writes snapshots; per-day idempotency; `/history` returns recorded points; empty-state note; oldest-first ordering (temp SQLite, offline) |
 | `test_providers.py` | `normalize_hero_name`; Rone Arena parsing (refs, rankings); MLBBDex parsing (catalog, detail, rankings) via `httpx.MockTransport` |
 
 > A fixture gap briefly let the esports tests reach the live network (they

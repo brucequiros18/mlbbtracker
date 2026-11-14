@@ -38,3 +38,7 @@ mobile/android/key.properties
 *.iml
 .DS_Store
 Thumbs.db
+
+# ---- Backend runtime data ----
+backend/mlbb_tracker.db
+backend/*.db

@@ -40,6 +40,20 @@ versions use Semantic Versioning.
   exposes them. The app shows a clear explanation and never fabricates data.
 - MLBB Tracker is unofficial and not affiliated with Moonton.
 
+## [0.4.0] — 2026-11-14
+
+### Added — Milestone 5 (part): persistence + recorded history
+- Backend: SQLAlchemy 2 + Alembic (`hero_snapshots` table, migration
+  `16af8bfd4fb2`). Dev DB is SQLite (`MLBB_DATABASE_URL` switches to Supabase
+  Postgres; models/migrations shared).
+- Every fresh 7-day rankings fetch records daily hero snapshots (one per hero
+  per UTC day, idempotent; failures never break the API).
+- New `GET /api/v1/heroes/{identifier}/history` — our own observation history
+  (`sources` empty by design; honest empty-state note until data accumulates).
+- `backend/scripts/record_snapshot.py` for scheduled refreshes; first live run
+  recorded 133 heroes (Masha 60.70% WR, rank #1).
+- Tests: 23 backend tests (5 new, offline on temp SQLite).
+
 ## [0.3.0] — 2026-11-14
 
 ### Added — Milestone 6: esports standings

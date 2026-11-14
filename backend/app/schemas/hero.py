@@ -51,6 +51,17 @@ class HeroTrendPoint(ApiModel):
     pick_rate: float
 
 
+class HeroHistoryPoint(ApiModel):
+    """One recorded daily snapshot (our own observations, not provider data)."""
+
+    captured_on: str
+    win_rate: float
+    ban_rate: float
+    pick_rate: float
+    tier: str | None = None
+    rank_position: int | None = None
+
+
 class HeroRanking(ApiModel):
     id: int
     name: str

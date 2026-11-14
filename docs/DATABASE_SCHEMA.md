@@ -3,10 +3,14 @@
 Target: **PostgreSQL (Supabase)**. Schema is defined in
 [`database/schema.sql`](../database/schema.sql).
 
-> **Status.** The running backend currently serves from providers + an
-> in-process TTL cache; it does not yet require a database. This schema is the
-> agreed target for Milestone 3+, where scheduled snapshots, saved players and
-> caching move into Postgres. No fabricated data is seeded.
+> **Status.** The backend now persists data through **SQLAlchemy 2 + Alembic**
+> (`backend/migrations/`, initial revision `16af8bfd4fb2`). Development runs on
+> SQLite (`backend/mlbb_tracker.db`, git-ignored); production points
+> `MLBB_DATABASE_URL` at a Supabase Postgres URL — same models, same
+> migrations (install `psycopg2-binary` for Postgres). Tables below in
+> `schema.sql` that are not yet runtime-managed (players, favorites,
+> `api_cache`) come with the next persistence increments. No fabricated data
+> is seeded.
 
 ## Design principles
 

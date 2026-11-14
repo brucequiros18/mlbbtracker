@@ -1,0 +1,44 @@
+"""ORM models.
+
+Only data we genuinely record is stored here — snapshots of provider ranking
+data as it was observed. Nothing is ever synthesized: if a hero had no
+ranking entry on a given day, it has no row for that day.
+"""
+
+from __future__ import annotations
+
+from datetime import date, datetime, timezone
+
+from sqlalchemy import Date, DateTime, Float, Integer, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.base import Base
+
+
+class HeroSnapshot(Base):
+    """A daily observation of a hero's rank-window statistics.
+
+    Rows are written whenever the backend fetches the 7-day rankings from the
+    live provider and no snapshot exists yet for (hero, window, day).
+    """
+
+    __tablename__ = "hero_snapshots"
+    __table_args__ = (
+        UniqueConstraint("hero_id", "days", "captured_on", name="uq_hero_day_window"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    hero_id: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    hero_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    days: Mapped[int] = mapped_column(Integer, nullable=False, default=7)
+    captured_on: Mapped[date] = mapped_column(Date, index=True, nullable=False)
+    win_rate: Mapped[float] = mapped_column(Float, nullable=False)
+    ban_rate: Mapped[float] = mapped_column(Float, nullable=False)
+    pick_rate: Mapped[float] = mapped_column(Float, nullable=False)
+    tier: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    rank_position: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )

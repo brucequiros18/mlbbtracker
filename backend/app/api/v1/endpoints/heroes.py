@@ -14,7 +14,13 @@ from app.schemas.common import (
     ListResponse,
     Meta,
 )
-from app.schemas.hero import HeroDetail, HeroRanking, HeroSummary, HeroTrendPoint
+from app.schemas.hero import (
+    HeroDetail,
+    HeroHistoryPoint,
+    HeroRanking,
+    HeroSummary,
+    HeroTrendPoint,
+)
 from app.services.hero_service import HeroService
 
 router = APIRouter(prefix="/heroes", tags=["heroes"])
@@ -75,6 +81,39 @@ async def hero_trends(
         for p in points
     ]
     return ListResponse(data=data, meta=Meta(count=len(data), sources=[RONE_SOURCE]))
+
+
+@router.get(
+    "/{identifier}/history",
+    response_model=ListResponse[HeroHistoryPoint],
+    summary="Recorded daily snapshots for a hero (our own observation history)",
+)
+async def hero_history(
+    identifier: str,
+    service: Annotated[HeroService, Depends(get_hero_service)],
+) -> ListResponse[HeroHistoryPoint]:
+    """Snapshots written by this backend whenever rankings were fetched live.
+
+    Empty (with count 0) until the backend has observed at least one live
+    rankings fetch — recorded data is never synthesized.
+    """
+    rows = await service.history(identifier)
+    data = [
+        HeroHistoryPoint(
+            captured_on=s.captured_on.isoformat(),
+            win_rate=s.win_rate,
+            ban_rate=s.ban_rate,
+            pick_rate=s.pick_rate,
+            tier=s.tier,
+            rank_position=s.rank_position,
+        )
+        for s in rows
+    ]
+    note = (
+        None if data
+        else "No snapshots recorded yet. They accumulate as the backend fetches rankings live (one per UTC day)."
+    )
+    return ListResponse(data=data, meta=Meta(count=len(data), note=note))
 
 
 @router.get(
