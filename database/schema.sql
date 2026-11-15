@@ -40,6 +40,22 @@ create table if not exists hero_statistics (
 create index if not exists idx_hero_stats_lookup
     on hero_statistics (hero_id, rank, days, recorded_at desc);
 
+-- ── Player sessions (consented sign-in) ───────────────────────────────────────
+-- One row per connected account. `provider_token` holds the upstream JWT and
+-- must never be exposed to clients; the app receives an opaque session key
+-- whose SHA-256 hash is stored in `session_hash`.
+create table if not exists player_sessions (
+    id             bigint generated always as identity primary key,
+    session_hash   text not null unique,              -- sha256 of the app session key
+    provider_token text not null,                     -- upstream JWT (server-side only)
+    role_id        text not null,
+    zone_id        text not null,
+    ign            text,
+    created_at     timestamptz not null default now(),
+    last_seen_at   timestamptz not null default now()
+);
+create index if not exists idx_player_sessions_hash on player_sessions (session_hash);
+
 -- ── Player snapshots (only populated if a permitted source appears) ──────────
 create table if not exists player_snapshots (
     id            bigint generated always as identity primary key,

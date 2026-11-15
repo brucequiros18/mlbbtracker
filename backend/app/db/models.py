@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, Float, Integer, String, UniqueConstraint
+from sqlalchemy import Date, DateTime, Float, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -42,3 +42,28 @@ class HeroSnapshot(Base):
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
+
+class PlayerSession(Base):
+    """A consented player connection.
+
+    The provider JWT is stored server-side only; the app holds an opaque
+    session key whose SHA-256 hash is what appears in `session_hash`.
+    """
+
+    __tablename__ = "player_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    provider_token: Mapped[str] = mapped_column(Text, nullable=False)
+    role_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    zone_id: Mapped[str] = mapped_column(String(16), nullable=False)
+    ign: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+

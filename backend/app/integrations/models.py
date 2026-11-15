@@ -99,6 +99,7 @@ class PlayerProfileData:
     ign: str
     avatar: str | None = None
     level: int | None = None
+    rank_level: int | None = None
     rank_name: str | None = None
     rank_icon: str | None = None
     total_matches: int | None = None
@@ -107,3 +108,62 @@ class PlayerProfileData:
     win_rate: float | None = None
     kda: float | None = None
     mvp_count: int | None = None
+
+
+@dataclass(slots=True)
+class PlayerStatsData:
+    """Aggregate statistics for the signed-in player.
+
+    Field meanings come from the provider's own docs: ``tc`` total matches,
+    ``wc`` wins, ``as`` average score (/100), ``gt`` playtime hours, ``mvpc``
+    MVP count, ``wsc`` win streak.
+    """
+
+    total_matches: int | None = None
+    wins: int | None = None
+    win_rate: float | None = None
+    avg_score: float | None = None
+    playtime_hours: float | None = None
+    mvp_count: int | None = None
+    win_streak: int | None = None
+
+
+@dataclass(slots=True)
+class PlayerMatchData:
+    """One match from the player's history.
+
+    ``won`` is decoded from the provider's ``res`` flag (1 = win, 0 = loss);
+    ``kda`` is derived from the real K/D/A: (kills + assists) / max(deaths, 1).
+    """
+
+    battle_id: str | None
+    season_id: int | None
+    hero_id: int | None
+    hero_name: str | None
+    hero_icon: str | None
+    kills: int
+    deaths: int
+    assists: int
+    kda: float
+    mvp: bool
+    won: bool
+    score: int | None
+    lane_id: int | None
+    played_at: str  # ISO-8601 UTC
+
+
+@dataclass(slots=True)
+class PlayerMatchesPage:
+    matches: list[PlayerMatchData]
+    next_cursor: str | None = None
+    has_next: bool = False
+
+
+@dataclass(slots=True)
+class FrequentHeroData:
+    hero_id: int | None
+    hero_name: str | None
+    hero_icon: str | None
+    total_matches: int | None = None
+    wins: int | None = None
+    win_rate: float | None = None

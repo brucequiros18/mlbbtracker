@@ -1,14 +1,15 @@
-"""Repository functions for recorded snapshots."""
+"""Repository functions for recorded snapshots and player sessions."""
 
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 from collections.abc import Callable, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import HeroSnapshot
+from app.db.models import HeroSnapshot, PlayerSession
 from app.integrations.models import RankingEntry
 
 
@@ -75,3 +76,80 @@ def history_for_hero(
                 .order_by(HeroSnapshot.captured_on.asc(), HeroSnapshot.id.asc())
             )
         )
+
+
+# — Player sessions —————————————————————————————————————————————
+
+
+def hash_session_key(key: str) -> str:
+    """SHA-256 of the opaque app session key (the raw key is never stored)."""
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+
+def save_session(
+    session_factory: Callable[[], Session],
+    *,
+    session_key: str,
+    provider_token: str,
+    role_id: str,
+    zone_id: str,
+    ign: str | None,
+) -> None:
+    now = dt.datetime.now(dt.timezone.utc)
+    key_hash = hash_session_key(session_key)
+    with session_factory() as session:
+        existing = session.scalar(
+            select(PlayerSession).where(PlayerSession.session_hash == key_hash)
+        )
+        if existing is not None:
+            existing.provider_token = provider_token
+            existing.ign = ign
+            existing.last_seen_at = now
+        else:
+            session.add(
+                PlayerSession(
+                    session_hash=key_hash,
+                    provider_token=provider_token,
+                    role_id=role_id,
+                    zone_id=zone_id,
+                    ign=ign,
+                    created_at=now,
+                    last_seen_at=now,
+                )
+            )
+        session.commit()
+
+
+def find_session(
+    session_factory: Callable[[], Session], session_key: str
+) -> PlayerSession | None:
+    with session_factory() as session:
+        return session.scalar(
+            select(PlayerSession).where(
+                PlayerSession.session_hash == hash_session_key(session_key)
+            )
+        )
+
+
+def touch_session(session_factory: Callable[[], Session], session_key: str) -> None:
+    with session_factory() as session:
+        row = session.scalar(
+            select(PlayerSession).where(
+                PlayerSession.session_hash == hash_session_key(session_key)
+            )
+        )
+        if row is not None:
+            row.last_seen_at = dt.datetime.now(dt.timezone.utc)
+            session.commit()
+
+
+def delete_session(session_factory: Callable[[], Session], session_key: str) -> None:
+    with session_factory() as session:
+        row = session.scalar(
+            select(PlayerSession).where(
+                PlayerSession.session_hash == hash_session_key(session_key)
+            )
+        )
+        if row is not None:
+            session.delete(row)
+            session.commit()

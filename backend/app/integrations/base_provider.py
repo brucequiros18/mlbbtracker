@@ -15,10 +15,14 @@ from abc import ABC, abstractmethod
 
 from app.integrations.models import (
     EsportsStanding,
+    FrequentHeroData,
     HeroDetailData,
     HeroMeta,
     HeroRef,
+    PlayerMatchData,
+    PlayerMatchesPage,
     PlayerProfileData,
+    PlayerStatsData,
     RankingEntry,
     TrendPoint,
 )
@@ -69,3 +73,39 @@ class PlayerProvider(ABC):
 
     @abstractmethod
     async def fetch_player(self, player_id: str, zone_id: str) -> PlayerProfileData: ...
+
+
+class PlayerSessionProvider(ABC):
+    """Consented self-service player access.
+
+    The player authenticates **as themselves** with a one-time code delivered
+    in-game. No password is ever handled. Implementations return an opaque
+    provider token that the backend stores server-side.
+    """
+
+    name: str = "player_session"
+
+    @abstractmethod
+    async def send_verification_code(self, role_id: str, zone_id: str) -> None: ...
+
+    @abstractmethod
+    async def login(self, role_id: str, zone_id: str, code: str) -> str: ...
+
+    @abstractmethod
+    async def logout(self, token: str) -> None: ...
+
+    @abstractmethod
+    async def user_info(self, token: str) -> PlayerProfileData: ...
+
+    @abstractmethod
+    async def user_stats(self, token: str) -> PlayerStatsData: ...
+
+    @abstractmethod
+    async def user_matches(
+        self, token: str, *, limit: int = 20, cursor: str | None = None
+    ) -> PlayerMatchesPage: ...
+
+    @abstractmethod
+    async def user_frequent_heroes(
+        self, token: str, *, limit: int = 10
+    ) -> list[FrequentHeroData]: ...

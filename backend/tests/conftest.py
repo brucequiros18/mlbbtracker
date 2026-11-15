@@ -16,10 +16,15 @@ from app.core.cache import cache
 from app.core.config import get_settings
 from app.integrations.models import (
     EsportsStanding,
+    FrequentHeroData,
     HeroDetailData,
     HeroMeta,
     HeroRef,
     HeroSkillData,
+    PlayerMatchData,
+    PlayerMatchesPage,
+    PlayerProfileData,
+    PlayerStatsData,
     RankingEntry,
     TrendPoint,
 )
@@ -70,6 +75,67 @@ class FakeRone:
                 match_point=10, match_wins=10, match_losses=4, net_game_win=12,
                 game_wins=22, game_losses=10,
             ),
+        ]
+
+    # — Player session (consented sign-in) ————————————————————
+    async def send_verification_code(self, role_id: str, zone_id: str) -> None:
+        if role_id != "123456789":
+            from app.core.errors import ProviderAuthError
+
+            raise ProviderAuthError("No such player.")
+
+    async def login(self, role_id: str, zone_id: str, code: str) -> str:
+        from app.core.errors import ProviderAuthError
+
+        if code != "111111":
+            raise ProviderAuthError("Invalid verification code.")
+        return "fake-provider-jwt"
+
+    async def logout(self, token: str) -> None:
+        return None
+
+    async def user_info(self, token: str) -> PlayerProfileData:
+        return PlayerProfileData(
+            player_id="123456789", zone_id="1234", ign="TestPlayer",
+            avatar="https://img/avatar.png", level=42, rank_level=7,
+        )
+
+    async def user_stats(self, token: str) -> PlayerStatsData:
+        return PlayerStatsData(
+            total_matches=100, wins=60, win_rate=0.6, avg_score=8.4,
+            playtime_hours=52.5, mvp_count=14, win_streak=7,
+        )
+
+    async def user_matches(
+        self, token: str, *, limit: int = 20, cursor: str | None = None
+    ) -> PlayerMatchesPage:
+        return PlayerMatchesPage(
+            matches=[
+                PlayerMatchData(
+                    battle_id="9001", season_id=40, hero_id=88, hero_name="Masha",
+                    hero_icon="https://img/masha.png", kills=8, deaths=2, assists=5,
+                    kda=6.5, mvp=True, won=True, score=92, lane_id=1,
+                    played_at="2026-11-13T10:00:00+00:00",
+                ),
+                PlayerMatchData(
+                    battle_id="9000", season_id=40, hero_id=78, hero_name="Khufra",
+                    hero_icon="https://img/khufra.png", kills=1, deaths=6, assists=9,
+                    kda=1.67, mvp=False, won=False, score=41, lane_id=3,
+                    played_at="2026-11-12T09:00:00+00:00",
+                ),
+            ],
+            next_cursor="cursor-2",
+            has_next=True,
+        )
+
+    async def user_frequent_heroes(
+        self, token: str, *, limit: int = 10
+    ) -> list[FrequentHeroData]:
+        return [
+            FrequentHeroData(
+                hero_id=88, hero_name="Masha", hero_icon="https://img/masha.png",
+                total_matches=40, wins=26, win_rate=0.65,
+            )
         ]
 
 

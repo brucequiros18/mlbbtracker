@@ -12,7 +12,7 @@ cd backend
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Result: **23 passed.**
+Result: **34 passed.**
 
 | Test file | Covers |
 |---|---|
@@ -21,6 +21,7 @@ Result: **23 passed.**
 | `test_players.py` | `501 NOT_SUPPORTED` envelope; `422` digit validation |
 | `test_esports.py` | standings rows + camelCase keys; rank ordering; unknown league `422` |
 | `test_history.py` | rankings fetch writes snapshots; per-day idempotency; `/history` returns recorded points; empty-state note; oldest-first ordering (temp SQLite, offline) |
+| `test_player_connect.py` | consented connect: code request, wrong code → 401, verify → session + hashed-key storage, profile/stats/matches/heroes mapping, disconnect revokes, numeric-id validation (temp SQLite, offline) |
 | `test_providers.py` | `normalize_hero_name`; Rone Arena parsing (refs, rankings); MLBBDex parsing (catalog, detail, rankings) via `httpx.MockTransport` |
 
 > A fixture gap briefly let the esports tests reach the live network (they
@@ -111,14 +112,35 @@ Two real defects were found and fixed by this pass:
 Also fixed a `RenderFlex` overflow (5.2px) on the hero grid card surfaced by the
 running app.
 
+## 5b. Player connect flow (Flutter web, release build)
+
+The consented sign-in flow was driven in headless Chromium against the live
+backend:
+
+| Scenario | Evidence |
+|---|---|
+| Connect screen renders | "Connect your account", 3-step explanation, ID/zone fields, no-password note |
+| Sends the in-game code | Filling Player ID `999999999` / Zone `9999` and tapping **Send verification code** issued a real `POST /api/v1/players/connect/start` → **200**, and the UI advanced to the verification-code step |
+| Console errors | **0** |
+| Unauthenticated access | `GET /api/v1/players/me/profile` without a token → **401 PROVIDER_AUTH_REQUIRED** |
+| Unknown player | `POST /api/v1/players/connect/start` with a bogus id → **401** with honest copy (the provider's own 500/validation bug is mapped to an auth error, not a raw 500) |
+
+> The **final step needs the player's own inbox**: the code is delivered by
+> Moonton to the connected account, so completing the sign-in requires a real
+> Player ID/Zone ID and reading the code in-game. Everything up to that point
+> is verified above; the dashboard itself is covered by widget tests against a
+> fake provider (`player_connect_test.dart`).
+
 ## 6. Not yet tested (honest gaps)
 
 - **On-device run** on `Medium_Phone_API_36.1` (Milestone 7).
+- **Full live sign-in** with a real account (requires the player's in-game
+  mailbox — see 5b).
 - **Integration tests** app↔API (contract tests) — planned.
 - **Performance/size** profiling and security review — planned.
 - **iOS** — project exists, not built (Android-first).
 
 ## Verdict
 
-Backend: green (unit + live + HTTP). Mobile: analyze clean, widget test green.
+Backend: green (unit + live + HTTP). Mobile: analyze clean, 3 widget tests green.
 No feature is claimed complete without the above evidence.

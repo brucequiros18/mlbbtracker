@@ -6,6 +6,7 @@ enum ApiErrorKind {
   network,
   timeout,
   notFound,
+  unauthorized,
   validation,
   unsupported,
   server,
@@ -45,6 +46,7 @@ class ApiException implements Exception {
         }
         final status = res?.statusCode ?? 0;
         final ApiErrorKind kind = switch (status) {
+          401 => ApiErrorKind.unauthorized,
           404 => ApiErrorKind.notFound,
           422 => ApiErrorKind.validation,
           501 => ApiErrorKind.unsupported,
@@ -72,6 +74,8 @@ String describeError(Object error) {
         'Cannot reach the MLBB Tracker server. Check your connection and that the backend is running.',
       ApiErrorKind.timeout => 'The server took too long to respond. Please try again.',
       ApiErrorKind.notFound => "That content isn't available. It may not exist or isn't covered by the data source.",
+      ApiErrorKind.unauthorized =>
+        'Your MLBB session expired. Connect your account again to refresh your stats.',
       ApiErrorKind.validation => 'The request was invalid. Please adjust it and try again.',
       ApiErrorKind.unsupported =>
         "This feature isn't available from public MLBB data sources yet.",

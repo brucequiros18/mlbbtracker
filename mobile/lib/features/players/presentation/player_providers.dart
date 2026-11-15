@@ -11,68 +11,141 @@ final playerRepositoryProvider = Provider<PlayerRepository>(
   (ref) => PlayerRepositoryImpl(ref.watch(dioProvider)),
 );
 
-sealed class PlayerSearchState {
-  const PlayerSearchState();
-}
+// — Session token (opaque app key; provider JWT never reaches the device) ——
+final sessionTokenProvider =
+    StateNotifierProvider<SessionTokenNotifier, String?>(
+  (ref) => SessionTokenNotifier(ref.watch(localStoreProvider)),
+);
 
-class PlayerSearchIdle extends PlayerSearchState {
-  const PlayerSearchIdle();
-}
+class SessionTokenNotifier extends StateNotifier<String?> {
+  SessionTokenNotifier(this._store) : super(_store.readSessionToken());
 
-class PlayerSearchLoading extends PlayerSearchState {
-  const PlayerSearchLoading();
-}
-
-class PlayerSearchSuccess extends PlayerSearchState {
-  const PlayerSearchSuccess(this.profile);
-  final PlayerProfile profile;
-}
-
-/// No permitted data source can serve this player. Carries an explanation.
-class PlayerSearchUnavailable extends PlayerSearchState {
-  const PlayerSearchUnavailable(this.message);
-  final String message;
-}
-
-class PlayerSearchFailure extends PlayerSearchState {
-  const PlayerSearchFailure(this.message);
-  final String message;
-}
-
-class PlayerSearchController extends StateNotifier<PlayerSearchState> {
-  PlayerSearchController(this._repo, this._store)
-      : super(const PlayerSearchIdle());
-
-  final PlayerRepository _repo;
   final LocalStore _store;
 
-  Future<void> search(String playerId, String zoneId) async {
-    state = const PlayerSearchLoading();
+  Future<void> save(String token) async {
+    await _store.saveSessionToken(token);
+    state = token;
+  }
+
+  Future<void> clear() async {
+    await _store.clearSessionToken();
+    state = null;
+  }
+}
+
+// — Connect flow state ———————————————————————————————————————
+sealed class ConnectState {
+  const ConnectState();
+}
+
+class ConnectIdle extends ConnectState {
+  const ConnectIdle();
+}
+
+class ConnectSendingCode extends ConnectState {
+  const ConnectSendingCode();
+}
+
+/// A code was delivered to the player's in-game mailbox.
+class ConnectCodeSent extends ConnectState {
+  const ConnectCodeSent(this.playerId, this.zoneId);
+  final String playerId;
+  final String zoneId;
+}
+
+class ConnectVerifying extends ConnectState {
+  const ConnectVerifying();
+}
+
+class ConnectError extends ConnectState {
+  const ConnectError(this.message);
+  final String message;
+}
+
+class ConnectController extends StateNotifier<ConnectState> {
+  ConnectController(this._repo, this._tokens) : super(const ConnectIdle());
+
+  final PlayerRepository _repo;
+  final SessionTokenNotifier _tokens;
+
+  Future<void> sendCode(String playerId, String zoneId) async {
+    state = const ConnectSendingCode();
     try {
-      final profile = await _repo.lookup(playerId: playerId, zoneId: zoneId);
-      await _store.addRecentSearch(playerId, zoneId);
-      state = PlayerSearchSuccess(profile);
+      await _repo.connectStart(playerId: playerId, zoneId: zoneId);
+      state = ConnectCodeSent(playerId, zoneId);
     } on ApiException catch (e) {
-      if (e.kind == ApiErrorKind.unsupported) {
-        state = PlayerSearchUnavailable(e.message);
-      } else {
-        state = PlayerSearchFailure(e.message);
-      }
-    } catch (e) {
-      state = PlayerSearchFailure('Unexpected error: $e');
+      state = ConnectError(e.message);
+    } catch (_) {
+      state = const ConnectError('Could not reach the server. Please try again.');
     }
   }
 
-  void reset() => state = const PlayerSearchIdle();
+  Future<void> verify(String playerId, String zoneId, String code) async {
+    state = const ConnectVerifying();
+    try {
+      final result = await _repo.connectVerify(
+        playerId: playerId,
+        zoneId: zoneId,
+        code: code,
+      );
+      await _tokens.save(result.sessionToken);
+      state = const ConnectIdle();
+    } on ApiException catch (e) {
+      state = ConnectError(e.message);
+    } catch (_) {
+      state = const ConnectError('Could not reach the server. Please try again.');
+    }
+  }
+
+  Future<void> disconnect() async {
+    final token = _tokens.state;
+    if (token != null) {
+      try {
+        await _repo.disconnect(token);
+      } on ApiException {
+        // Local sign-out must succeed even if the server call fails.
+      }
+    }
+    await _tokens.clear();
+    state = const ConnectIdle();
+  }
 }
 
-final playerSearchControllerProvider =
-    StateNotifierProvider.autoDispose<PlayerSearchController, PlayerSearchState>(
-  (ref) => PlayerSearchController(
+final connectControllerProvider =
+    StateNotifierProvider.autoDispose<ConnectController, ConnectState>(
+  (ref) => ConnectController(
     ref.watch(playerRepositoryProvider),
-    ref.watch(localStoreProvider),
+    ref.watch(sessionTokenProvider.notifier),
   ),
 );
+
+// — Connected dashboard data —————————————————————————————————
+String _requireToken(String? token) {
+  if (token == null) {
+    throw ApiException(ApiErrorKind.unauthorized, 'Not connected.');
+  }
+  return token;
+}
+
+final connectedProfileProvider = FutureProvider.autoDispose<PlayerProfile>((ref) {
+  final token = _requireToken(ref.watch(sessionTokenProvider));
+  return ref.watch(playerRepositoryProvider).profile(token);
+});
+
+final playerStatsProvider = FutureProvider.autoDispose<PlayerStats>((ref) {
+  final token = _requireToken(ref.watch(sessionTokenProvider));
+  return ref.watch(playerRepositoryProvider).stats(token);
+});
+
+final playerMatchesProvider = FutureProvider.autoDispose<PlayerMatchesPage>((ref) {
+  final token = _requireToken(ref.watch(sessionTokenProvider));
+  return ref.watch(playerRepositoryProvider).matches(token);
+});
+
+final playerHeroesProvider = FutureProvider.autoDispose<List<FrequentHero>>((ref) {
+  final token = _requireToken(ref.watch(sessionTokenProvider));
+  return ref.watch(playerRepositoryProvider).frequentHeroes(token);
+});
 
 /// Recently searched players, persisted on-device.
 final recentSearchesProvider =

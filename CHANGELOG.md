@@ -40,6 +40,28 @@ versions use Semantic Versioning.
   exposes them. The app shows a clear explanation and never fabricates data.
 - MLBB Tracker is unofficial and not affiliated with Moonton.
 
+## [0.5.0] — 2026-11-15
+
+### Added — Milestone 4: consented player tracking (real player stats)
+- **Backend**: `PlayerSessionProvider` interface + Rone Arena adapter for the
+  provider's own consent flow — `POST /user/auth/send-vc` (one-time code to the
+  player's in-game mailbox) → `POST /user/auth/login` → `data.jwt`.
+- New endpoints: `POST /players/connect/start`, `POST /players/connect/verify`,
+  `POST /players/disconnect`, `GET /players/me/{profile,stats,matches,heroes}`.
+  The upstream JWT never leaves the backend; the app holds an opaque session
+  key (stored server-side by SHA-256 hash).
+- New `player_sessions` table + Alembic migration `3dbed8e9151e`.
+- `GET /players/{id}/{zone}` still returns `501 NOT_SUPPORTED` — other players'
+  stats are not publicly available, and nothing is fabricated.
+- Provider quirks handled: the provider's 500-on-invalid-login is mapped to
+  `401 PROVIDER_AUTH_REQUIRED` with honest copy.
+- **Mobile**: Players tab rebuilt as a connect flow (ID/zone → in-game code →
+  connected dashboard) with real stats grid (matches, wins, WR, avg score, MVP,
+  win streak), recent matches (hero, K/D/A, KDA, MVP flag, win/loss, relative
+  time) and top heroes; pull-to-refresh, disconnect with confirmation.
+- `401` added to the client's error taxonomy.
+- Tests: 34 backend (11 new, offline) + 2 new widget tests.
+
 ## [0.4.0] — 2026-11-14
 
 ### Added — Milestone 5 (part): persistence + recorded history

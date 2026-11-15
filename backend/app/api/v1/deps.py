@@ -24,7 +24,7 @@ def get_hero_service() -> HeroService:
 
 
 def get_player_service() -> PlayerService:
-    return PlayerService(get_providers())
+    return PlayerService(get_providers(), session_factory=get_session_factory())
 
 
 def get_esports_service() -> EsportsService:

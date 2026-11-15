@@ -16,7 +16,19 @@ class LocalStore {
 
   static const _recentKey = 'recent_searches';
   static const _favoritesKey = 'favorite_heroes';
+  static const _sessionKey = 'player_session_token';
   static const _maxRecent = 10;
+
+  // — Player connection ——————————————————————————————————————
+  //
+  // The stored value is an opaque app session key, not a Moonton credential.
+  // The provider token stays on the backend. For production, move this to
+  // platform secure storage (flutter_secure_storage).
+  String? readSessionToken() => _prefs.getString(_sessionKey);
+
+  Future<void> saveSessionToken(String token) => _prefs.setString(_sessionKey, token);
+
+  Future<void> clearSessionToken() => _prefs.remove(_sessionKey);
 
   // — Recent searches ————————————————————————————————————————
   List<RecentSearch> readRecentSearches() {

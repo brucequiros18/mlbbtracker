@@ -100,18 +100,31 @@ Sample (`/heroes/khufra`, abridged):
 | Hero tier, counters, synergies, builds | ✅ Yes | MLBBDex + Rone Arena academy |
 | Hero leaderboards | ✅ Yes | Rone Arena rankings |
 | Esports standings (MPL ID/PH/MY/KH) | ✅ Yes | Rone Arena esports |
-| **Player lookup by Player ID + Zone ID** | ❌ **No** | No public endpoint exists |
-| **Player rank / win rate / KDA / MVP** | ❌ **No** | Only via `user/*`, which needs the player's sign-in |
-| **Match history** | ❌ **No** | Same — authenticated `user/matches` only |
+| **Player lookup by Player ID + Zone ID** | ❌ **No** | No public endpoint exists for *other* players |
+| **Connected player profile / stats / matches** | ✅ **Yes (consented)** | Rone Arena `user/*` after the player signs in with an in-game code |
+| **Player rank / win rate / KDA / MVP** | ✅ **Yes (consented)** | Same — own account only |
+| **Match history** | ✅ **Yes (consented)** | `user/matches` (cursor-paginated, own account only) |
 | **Ranked player leaderboard** | ❌ **No** | Not exposed by any honest source |
+
+> **Update (2026-11-15).** The Milestone-1 conclusion "player data is blocked"
+> has been narrowed, not reversed. The source was never missing — what was
+> missing was the *consent* step. Rone Arena's own documented flow
+> (`POST /user/auth/send-vc` → code in the player's in-game mailbox →
+> `POST /user/auth/login` → `data.jwt`) lets a player connect **their own**
+> account with a one-time code and no password. The backend now implements that
+> flow (token stored server-side, opaque session key on the device) and serves
+> real profile, stats, match history and top-hero data. Looking up *other*
+> players is still `501 NOT_SUPPORTED` — no honest source exposes it, and
+> nothing is fabricated.
 
 ## 5. Limitations & risks
 
-1. **Player data is the core gap.** The product concept centres on player search,
-   but no permitted source serves it. The only API that does (Rone Arena `/user/*`)
-   requires a one-time code sent to the player's account — i.e. signing in *as* the
-   player. The project rules forbid handling Moonton credentials and bypassing auth,
-   so this is out of scope by design.
+1. **Player data — resolved by consent, not by scraping.** No public source
+   serves *another* player's stats, and the project rules forbid handling
+   Moonton credentials or bypassing auth. The legitimate path is the
+   provider's own consent flow, where the player receives a one-time code in
+   their in-game mailbox and signs in as themselves. That is implemented; the
+   upstream token is stored server-side only.
 2. **Unofficial providers.** Rone Arena and MLBBDex are community projects, not
    Moonton-official. They can change or disappear. Mitigation: the provider
    abstraction lets us swap adapters without touching services or the app.
