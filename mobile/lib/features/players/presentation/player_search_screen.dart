@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -254,35 +256,60 @@ class _Step extends StatelessWidget {
 }
 
 // — Connected dashboard ——————————————————————————————————————
-class _ConnectedDashboard extends ConsumerWidget {
+class _ConnectedDashboard extends ConsumerStatefulWidget {
   const _ConnectedDashboard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ConnectedDashboard> createState() => _ConnectedDashboardState();
+}
+
+class _ConnectedDashboardState extends ConsumerState<_ConnectedDashboard> {
+  /// Live tracking: the provider refreshes the player's data continuously, so
+  /// the dashboard re-polls while it is open. A completed game shows up here
+  /// within a minute.
+  static const _pollInterval = Duration(seconds: 60);
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(_pollInterval, (_) => _refresh(silent: true));
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refresh({bool silent = false}) async {
+    ref.invalidate(connectedProfileProvider);
+    ref.invalidate(playerStatsProvider);
+    ref.invalidate(playerMatchesProvider);
+    ref.invalidate(playerHeroesProvider);
+    if (silent) return;
+    try {
+      await Future.wait([
+        ref.read(connectedProfileProvider.future),
+        ref.read(playerStatsProvider.future),
+        ref.read(playerMatchesProvider.future),
+        ref.read(playerHeroesProvider.future),
+      ]);
+    } catch (_) {
+      // Errors are surfaced by each section's own error view.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     final profile = ref.watch(connectedProfileProvider);
     final stats = ref.watch(playerStatsProvider);
     final matches = ref.watch(playerMatchesProvider);
     final heroes = ref.watch(playerHeroesProvider);
 
-    Future<void> refresh() async {
-      ref.invalidate(connectedProfileProvider);
-      ref.invalidate(playerStatsProvider);
-      ref.invalidate(playerMatchesProvider);
-      ref.invalidate(playerHeroesProvider);
-      try {
-        await Future.wait([
-          ref.read(connectedProfileProvider.future),
-          ref.read(playerStatsProvider.future),
-          ref.read(playerMatchesProvider.future),
-          ref.read(playerHeroesProvider.future),
-        ]);
-      } catch (_) {
-        // Errors are surfaced by each section's own error view.
-      }
-    }
-
     return RefreshIndicator(
-      onRefresh: refresh,
+      onRefresh: _refresh,
       child: ListView(
         padding: const EdgeInsets.all(AppSpacing.gutter),
         children: [
@@ -298,6 +325,17 @@ class _ConnectedDashboard extends ConsumerWidget {
             loading: () => const SizedBox.shrink(),
             error: (e, _) => ErrorView(message: describeError(e), onRetry: () => ref.invalidate(playerStatsProvider)),
             data: (s) => _StatsGrid(stats: s),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Icon(Icons.circle, size: 8, color: palette.positive),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Live tracking · refreshes every 60s',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: palette.textMuted),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.lg),
           SectionHeader(

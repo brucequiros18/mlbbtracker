@@ -60,6 +60,8 @@ versions use Semantic Versioning.
   win streak), recent matches (hero, K/D/A, KDA, MVP flag, win/loss, relative
   time) and top heroes; pull-to-refresh, disconnect with confirmation.
 - `401` added to the client's error taxonomy.
+- Dashboard polls every 60s while open ("Live tracking") so a finished game
+  appears without a manual refresh; pull-to-refresh still works.
 - Tests: 34 backend (11 new, offline) + 2 new widget tests.
 
 ## [0.4.0] — 2026-11-14
