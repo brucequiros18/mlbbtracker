@@ -40,6 +40,27 @@ versions use Semantic Versioning.
   exposes them. The app shows a clear explanation and never fabricates data.
 - MLBB Tracker is unofficial and not affiliated with Moonton.
 
+## [0.6.0] — 2026-11-15
+
+### Added — deployable web app (single origin)
+- FastAPI now serves the Flutter web build at `/` when `mobile/build/web`
+  exists (override with `MLBB_WEB_ROOT`), so app + API share one origin:
+  **no CORS configuration, one deployable unit**.
+- `scripts/run_web.ps1` — one command: build (if needed) and serve on `:8000`.
+- Web client defaults to the **origin it is served from**; `--dart-define=
+  API_BASE_URL=…` still points it at a separate API host.
+- Proper web metadata: title/description/Open Graph, app-themed PWA manifest
+  (`#111318` / `#8B7CFF`), branded loading splash, `color-scheme` support.
+- Baseline security headers (`X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, `Permissions-Policy`) and `Cache-Control: no-store` on API
+  responses.
+- `MLBB_CORS_ORIGINS` accepts a comma-separated list (no JSON needed).
+- Health payload now reports `player_connection` and `web_app` capabilities;
+  API index moved to `/api/meta` (`/` is the app).
+- `docs/DEPLOYMENT.md` — hosting options, env vars, production checklist,
+  nginx sample, known limitations.
+- Tests: 35 backend (root route now serves the app or the JSON index).
+
 ## [0.5.0] — 2026-11-15
 
 ### Added — Milestone 4: consented player tracking (real player stats)

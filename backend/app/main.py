@@ -13,6 +13,8 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app import __version__
 from app.api.v1.router import api_router
@@ -22,6 +24,24 @@ from app.core.logging import configure_logging, get_logger
 from app.integrations.provider_factory import get_providers
 
 logger = get_logger(__name__)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Baseline hardening headers for the browser-facing deployment."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+        if request.url.path.startswith((settings_api_prefix(), "/api")):
+            response.headers.setdefault("Cache-Control", "no-store")
+        return response
+
+
+def settings_api_prefix() -> str:
+    return get_settings().api_v1_prefix
 
 
 @asynccontextmanager
@@ -41,10 +61,10 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         version=__version__,
         description=(
-            "Backend for MLBB Tracker. Aggregates Mobile Legends: Bang Bang hero and "
-            "meta data from community providers behind a normalized REST API. "
-            "Player statistics are intentionally not served: no permitted public "
-            "source exposes them, so the app never displays fabricated data."
+            "Backend for MLBB Tracker. Aggregates Mobile Legends: Bang Bang hero, meta "
+            "and esports data from community providers behind a normalized REST API, and "
+            "serves a player's own statistics through a consented sign-in (a one-time "
+            "code, never a password). The app never displays fabricated data."
         ),
         lifespan=lifespan,
     )
@@ -56,6 +76,7 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
     )
+    app.add_middleware(SecurityHeadersMiddleware)
 
     @app.exception_handler(AppError)
     async def _app_error_handler(_: Request, exc: AppError) -> JSONResponse:
@@ -87,8 +108,8 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
-    @app.get("/", tags=["meta"], summary="API index")
-    async def index() -> dict:
+    @app.get("/api/meta", tags=["meta"], summary="API index")
+    async def meta() -> dict:
         return {
             "name": settings.app_name,
             "version": __version__,
@@ -96,6 +117,24 @@ def create_app() -> FastAPI:
             "openapi": "/openapi.json",
             "api": settings.api_v1_prefix,
         }
+
+    # Serve the Flutter web build from the same origin when one is present.
+    # Same-origin means no CORS setup and a single deployable unit.
+    web_root = settings.resolved_web_root()
+    if web_root is not None:
+        app.mount("/", StaticFiles(directory=str(web_root), html=True), name="web")
+        logger.info("serving web app from %s", web_root)
+    else:
+        @app.get("/", tags=["meta"], summary="API index")
+        async def index() -> dict:
+            return {
+                "name": settings.app_name,
+                "version": __version__,
+                "docs": "/docs",
+                "openapi": "/openapi.json",
+                "api": settings.api_v1_prefix,
+                "web": "not built — run `flutter build web --release` in mobile/",
+            }
 
     return app
 

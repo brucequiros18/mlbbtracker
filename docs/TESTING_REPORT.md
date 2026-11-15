@@ -131,6 +131,25 @@ backend:
 > is verified above; the dashboard itself is covered by widget tests against a
 > fake provider (`player_connect_test.dart`).
 
+## 5c. Web app — single-origin deployment
+
+The backend serves the Flutter web build at `/`, so app and API share an origin
+(`http://127.0.0.1:8000/`). Verified with Playwright against the release build:
+
+| Scenario | Evidence |
+|---|---|
+| App boots from the API origin | `GET /` → `text/html`, title `MLBB Tracker`, canvas painted |
+| Same-origin API calls | `GET /api/v1/heroes/rankings…` and `/api/v1/esports/id/standings` both on `127.0.0.1:8000` — no CORS preflight, no cross-origin request |
+| Deep links | `/#/players` and `/#/esports` load correctly on the same origin (hash routing → no SPA rewrite rules) |
+| Live data on Home | Masha 60.3%, Marcel 57.4%, Argus 56.8% |
+| Security headers | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`; API responses `Cache-Control: no-store` |
+| Console errors | **0** |
+
+**Upstream flakiness observed:** `arena.rone.dev` intermittently returns `503`
+for the esports standings endpoint (verified: fails, then succeeds on retry
+with 9 rows). The app renders its retry state instead of breaking — captured
+in a screenshot. This is provider-side, not an application defect.
+
 ## 6. Not yet tested (honest gaps)
 
 - **On-device run** on `Medium_Phone_API_36.1` (Milestone 7).

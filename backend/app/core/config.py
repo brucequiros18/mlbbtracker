@@ -7,7 +7,10 @@ Values can be overridden with environment variables prefixed ``MLBB_``
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
+from typing import Any
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -46,6 +49,29 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./mlbb_tracker.db"
 
     cors_origins: list[str] = ["*"]
+
+    # Static web build to serve alongside the API (the Flutter web app).
+    # Empty = auto-detect `<repo>/mobile/build/web` when it exists.
+    web_root: str = ""
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _split_origins(cls, value: Any) -> Any:
+        """Accept `MLBB_CORS_ORIGINS=https://a.com,https://b.com` as well as JSON."""
+        if isinstance(value, str):
+            parts = [p.strip() for p in value.split(",") if p.strip()]
+            return parts or ["*"]
+        return value
+
+    def resolved_web_root(self) -> Path | None:
+        """Directory holding the Flutter web build, if one is available."""
+        if self.web_root:
+            path = Path(self.web_root).expanduser()
+            return path if path.is_dir() else None
+        # backend/app/core/config.py -> repo root is three parents up.
+        repo_root = Path(__file__).resolve().parents[3]
+        candidate = repo_root / "mobile" / "build" / "web"
+        return candidate if candidate.is_dir() else None
 
 
 @lru_cache

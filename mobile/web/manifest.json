@@ -1,11 +1,11 @@
 {
-    "name": "mlbb_tracker",
-    "short_name": "mlbb_tracker",
+    "name": "MLBB Tracker",
+    "short_name": "MLBB Tracker",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#111318",
+    "theme_color": "#111318",
+    "description": "Hero meta, esports standings and your own match history for Mobile Legends: Bang Bang.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

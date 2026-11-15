@@ -1,34 +1,46 @@
 # MLBB Tracker
 
-A Mobile Legends: Bang Bang analytics platform — Flutter (Dart) mobile app + Python FastAPI backend.
+A Mobile Legends: Bang Bang analytics platform — Flutter (Dart) app (Android + **web**) + Python FastAPI backend.
 
-> **Status: Milestone 1 complete, Milestones 2–3 in progress.** The hero/meta
-> analytics are live and backed by real data. Per-player statistics are **not**
-> available from any permitted public source and are shown as such — the app
-> never fabricates player data. See [docs/RESEARCH_MILESTONE_1.md](docs/RESEARCH_MILESTONE_1.md).
+> **Status: Milestones 1–6 done.** Hero/meta analytics, esports standings and
+> **your own player statistics** (via a consented in-game code sign-in) are
+> live and backed by real data. Nothing is ever fabricated — see
+> [docs/RESEARCH_MILESTONE_1.md](docs/RESEARCH_MILESTONE_1.md).
 
 ## What works today (real data)
 
 - **Hero roster** — 133 heroes with real in-game ids, portraits, roles and lanes.
 - **Meta rankings** — real win / ban / pick rates by rank tier and time window, with wiki-backed tiers.
-- **Hero detail** — skills, ranked stats, and strong/weak relationships resolved from real hero ids.
+- **Hero detail** — skills, ranked stats, 7-day win-rate trend chart, strong/weak relationships.
+- **Recorded history** — daily snapshots the backend itself observes, served from the database.
+- **Esports** — MPL Indonesia / Philippines / Malaysia / Cambodia standings, schedules and match details.
+- **Player tracking** — connect **your own** account with a one-time code from your in-game mailbox; real profile, stats (wins, win rate, avg score, MVP count, win streak), match history with K/D/A and W/L, and top heroes. Live-polling every 60 s.
+- **Web app** — the Flutter web build is served by the API from a single origin: one URL, no CORS setup. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 - **Original UI** — dark-first "Competitive Minimalism" design system, 5-tab navigation, saved heroes, theming.
-- **Player search** — full UI + validation, but the backend returns an explicit `501 NOT_SUPPORTED` because no honest source exists (documented, never faked).
 
 ## Repository layout
 
 ```
 mlbb-tracker/
 ├── mobile/        Flutter app (Dart, Riverpod, GoRouter, Dio, FL Chart)
-├── backend/       FastAPI service (provider adapters, caching, tests)
+├── backend/       FastAPI service (provider adapters, caching, DB, tests)
 ├── database/      PostgreSQL schema
-├── docs/          Plans, API documentation, schema, UI/UX, testing report, research
+├── docs/          Plans, API docs, schema, UI/UX, testing report, research, deployment
+├── scripts/       run_web.ps1 — build + serve the web app
 └── README.md
 ```
 
 ## Quick start
 
-### Backend
+### Web app (one command — app + API on one origin)
+
+```powershell
+.\scripts\run_web.ps1            # builds if needed, then serves on :8000
+```
+
+Open **http://127.0.0.1:8000/** — API docs at `/docs`.
+
+### Backend only
 
 ```powershell
 cd backend
@@ -44,7 +56,7 @@ Live provider smoke test (network):
 .\.venv\Scripts\python.exe scripts\smoke_live.py
 ```
 
-### Mobile
+### Mobile app
 
 ```powershell
 cd mobile
@@ -53,7 +65,7 @@ flutter pub get
 # Android emulator reaches the host backend at 10.0.2.2 (the default).
 flutter run
 
-# Web (Chrome) — uses http://localhost:8000 by default.
+# Web dev server (debug build is slow to first paint; prefer the release build):
 flutter run -d chrome --web-port 8090
 
 # Physical device on your LAN:
@@ -63,8 +75,8 @@ flutter run --dart-define=API_BASE_URL=http://<your-ip>:8000
 ## Testing
 
 ```powershell
-cd backend ; .\.venv\Scripts\python.exe -m pytest      # 13 tests, offline
-cd mobile  ; flutter analyze ; flutter test            # no issues, 1 test
+cd backend ; .\.venv\Scripts\python.exe -m pytest      # 35 tests, offline
+cd mobile  ; flutter analyze ; flutter test             # no issues, 3 tests
 ```
 
 Automated tests never touch the network. Adapters are verified against realistic
@@ -75,7 +87,7 @@ real providers.
 
 | Source | Used for | Terms |
 |---|---|---|
-| [Rone Arena API](https://arena.rone.dev/) | hero ids, portraits, relationships, rankings | Unofficial community API; game data from Moonton public services |
+| [Rone Arena API](https://arena.rone.dev/) | hero ids, portraits, relationships, rankings, esports, player self-sign-in | Unofficial community API; game data from Moonton public services |
 | [MLBBDex](https://mlbbdex.com/) | roles, lanes, skills, tiers, patches | CC BY-SA (ML wiki) + MIT (analysis) |
 
 MLBB Tracker is an unofficial fan project, not affiliated with or endorsed by
@@ -85,4 +97,6 @@ Moonton. Mobile Legends: Bang Bang is a trademark of Shanghai Moonton Technology
 
 API credentials (if ever needed) stay on the backend in `.env`. No `.env` is
 committed; see `.env.example`. The app never asks for Moonton passwords and never
-bypasses provider authentication.
+bypasses provider authentication: the player signs in with a one-time code sent
+to their own in-game mailbox, and the resulting token stays server-side (the
+device holds only an opaque session key).

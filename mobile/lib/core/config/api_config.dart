@@ -10,17 +10,27 @@ import 'package:flutter/foundation.dart';
 ///   flutter run --dart-define=API_BASE_URL=http://192.168.1.10:8000
 abstract final class ApiConfig {
   /// Resolved per target:
+  ///  * Web              → the origin the app is served from (same origin as
+  ///                       the API, so no CORS configuration is needed)
   ///  * Android emulator → 10.0.2.2 (the host loopback alias)
-  ///  * Web / desktop    → localhost
+  ///  * Desktop          → localhost
   ///
-  /// A `--dart-define=API_BASE_URL=…` always wins, which is how you point a
-  /// physical device at a machine on your LAN.
+  /// A `--dart-define=API_BASE_URL=…` always wins, which is how you point the
+  /// app at a separate API host (or a physical device at a machine on your LAN).
   static final String baseUrl = _resolve();
 
   static String _resolve() {
     const override = String.fromEnvironment('API_BASE_URL');
     if (override.isNotEmpty) return override;
-    if (kIsWeb) return 'http://localhost:8000';
+    if (kIsWeb) {
+      // Same-origin by default: the backend serves the web build, so requests
+      // to /api/v1 work on whatever host the app is deployed to.
+      try {
+        return Uri.base.origin;
+      } catch (_) {
+        return 'http://localhost:8000';
+      }
+    }
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:8000';
     }

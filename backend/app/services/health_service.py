@@ -24,7 +24,11 @@ async def health_payload(settings: Settings, providers: Providers) -> dict:
             "hero_catalog": providers.rone is not None,
             "hero_detail": providers.mlbbdex is not None,
             "hero_rankings": providers.rone is not None or providers.mlbbdex is not None,
+            # Anonymous lookup of another player is not supported by any
+            # permitted source; the consented self-connect flow is.
             "player_lookup": settings.enable_player_lookup,
+            "player_connection": providers.rone is not None,
+            "web_app": settings.resolved_web_root() is not None,
         },
     }
 

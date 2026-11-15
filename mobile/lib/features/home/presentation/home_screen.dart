@@ -149,9 +149,9 @@ class _SearchEntry extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Search a player', style: Theme.of(context).textTheme.titleSmall),
+                Text('Connect your account', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 2),
-                Text('Player ID + Zone ID', style: Theme.of(context).textTheme.bodySmall),
+                Text('Your stats, KDA & match history', style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),
@@ -182,8 +182,9 @@ class _PlayerDataNotice extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              'Player search is limited: public MLBB sources expose no per-player stats. '
-              'Hero and ranking data is real; player profiles need an authenticated source.',
+              'Connect your own account with the one-time code from your in-game mailbox '
+              'to see your real stats, KDA and match history. Looking up other players '
+              'is not possible — no public source exposes it.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: palette.textSecondary),
             ),
           ),
