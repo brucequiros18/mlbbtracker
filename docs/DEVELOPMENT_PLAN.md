@@ -42,16 +42,19 @@ and every provider call is logged to `provider_health` (visible at
   (daily idempotent snapshot), `scripts/run_web.ps1`.
 - **Tests**: 47 backend tests (offline) + 6 widget tests; live smoke script.
 
+**Download page: ✅ complete (0.8.0).** `/download` serves a real APK with
+version, size, SHA-256, notes and install steps; `scripts/package_apk.ps1`
+builds and publishes it; the page degrades to an honest "not published yet"
+state when nothing exists.
+
 ## Next steps
 
-1. **Download page**: `/download` landing page + APK release pipeline
-   (`releases/latest.json` manifest, packaging script).
-2. **Milestone 5 — analytics**: hero comparison (2–3 heroes side by side),
+1. **Milestone 5 — analytics**: hero comparison (2–3 heroes side by side),
    counter/synergy explorer (`/academy/heroes/{id}/builds`, `/counters`).
-3. **Milestone 7 — QA**: run on `Medium_Phone_API_36.1` (software GPU flags);
+2. **Milestone 7 — QA**: run on `Medium_Phone_API_36.1` (software GPU flags);
    integration tests app↔API; performance/size profile; security review
    (CORS hardening, rate limiting, token encryption at rest).
-4. **Milestone 8 — release**: app icon + metadata, release keystore +
+3. **Milestone 8 — release**: app icon + metadata, release keystore +
    signed APK, store checklist.
 
 ## Player-data decision (updated)

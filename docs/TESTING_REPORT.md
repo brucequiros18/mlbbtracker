@@ -161,6 +161,21 @@ in a screenshot. This is provider-side, not an application defect.
 | Provider health log | `record_provider_health`/`recent_provider_health` unit tests + `GET /health/history` endpoint tests (shape, empty state, limit validation) |
 | Totals | **47 backend tests** (was 35), **6 widget tests** (was 3), `flutter analyze` clean |
 
+## 5e. Download page & APK release (browser + backend)
+
+| Scenario | Evidence |
+|---|---|
+| Page renders a published release | `GET /download` → 200 `text/html`; shows `v0.8.0+8`, **51.3 MB**, `Android 7.0 (API 24)`, SHA-256, preview badge, release notes, APK link |
+| APK actually serves | `HEAD /downloads/mlbb-tracker-0.8.0.apk` → 200, `application/vnd.android.package-archive`, `Content-Disposition: attachment`, 53 781 724 bytes; GET returns the file |
+| Path safety | `/downloads/../backend/app/main.py` and `%2e%2e%2f…` → **404**; non-`.apk` names → 404 |
+| Honest empty state | With no `latest.json`, the page says "No public APK has been published" and shows **no** download link (covered by backend tests) |
+| Corrupt / unsafe manifest | Non-JSON and traversal filenames in `latest.json` are ignored → empty state |
+| Manifest JSON | `GET /api/v1/app/release` → 200 with version, size, sha256, notes; `404 NOT_FOUND` when unpublished |
+| CSP | Page sends `default-src 'none'; style-src 'unsafe-inline'; …`; page contains **no JavaScript** |
+| Layout | Screenshots at 1280×950 and 390×844 (buttons go full-width on phones); 0 console errors |
+| App entry point | Web Home shows the "Get the Android app" card (web-only; hidden on Android) |
+| Totals | **60 backend tests** (was 47), **6 widget tests**, `flutter analyze` clean |
+
 ## 6. Not yet tested (honest gaps)
 
 - **On-device run** on `Medium_Phone_API_36.1` (Milestone 7).

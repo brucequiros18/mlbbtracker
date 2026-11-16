@@ -39,6 +39,31 @@ intermittent 503s from `arena.rone.dev`) leave a trace instead of being silent.
 ```
 `limit` ∈ `1..200` (default `50`), newest first.
 
+### `GET /api/v1/app/release`
+The published Android release manifest — the same document the `/download`
+page is rendered from.
+```json
+{"data":{"version":"0.8.0+8","version_name":"0.8.0","build":8,"channel":"preview",
+ "file":"mlbb-tracker-0.8.0.apk","size_bytes":53781724,"sha256":"730f…",
+ "released_at":"2026-11-16","min_android":"7.0 (API 24)",
+ "signed_with":"debug keys - preview build; configure a release keystore before store distribution",
+ "notes":["…"]},
+ "meta":{"sources":[]}}
+```
+`404 NOT_FOUND` until a release has been packaged — a missing build is never
+fabricated.
+
+### `GET /download` (HTML, outside `/api/v1`)
+Server-rendered landing page for the Android build: version, size, SHA-256,
+release notes, install steps, and a link to the web app. It is plain HTML (no
+JavaScript, no Flutter canvas), so it loads instantly and is indexable. When no
+release is published it says so and offers the web app instead.
+
+### `GET /downloads/<filename>` (outside `/api/v1`)
+Serves the APK with `Content-Type: application/vnd.android.package-archive`
+and `Content-Disposition: attachment`. Only plain `*.apk` names inside the
+releases directory are served — traversal and other extensions return `404`.
+
 ### `GET /heroes`
 Query: `role` (e.g. `Tank`), `lane` (e.g. `Roam`). Returns `HeroSummary[]`:
 ```json

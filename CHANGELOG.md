@@ -40,6 +40,32 @@ versions use Semantic Versioning.
   exposes them. The app shows a clear explanation and never fabricates data.
 - MLBB Tracker is unofficial and not affiliated with Moonton.
 
+## [0.8.0] — 2026-11-16
+
+### Added — download page & APK release pipeline
+- **`GET /download`** — a plain server-rendered HTML landing page (no
+  JavaScript, no Flutter canvas, indexable): app icon, version, size,
+  SHA-256, release date, minimum Android, release notes, three-step install
+  guide, and a "use the web app" alternative. Responsive, dark/light aware,
+  styled to the design system.
+- **`GET /downloads/<file>`** — serves the APK with the Android MIME type and
+  `Content-Disposition: attachment`; strict `*.apk` filename allowlist (path
+  traversal and other extensions return 404). GET and HEAD supported.
+- **`GET /api/v1/app/release`** — the release manifest as JSON
+  (`404 NOT_FOUND` until something is published).
+- **`scripts/package_apk.ps1`** — one command: `flutter build apk --release`,
+  copy into `releases/`, compute SHA-256/size, read the real `minSdk` from the
+  artifact with `aapt2`, write `releases/latest.json` (UTF-8, no BOM).
+- **Honest states**: with no manifest the page says "no build published yet"
+  and shows no link; a corrupt or unsafe manifest is ignored.
+- **Home (web only)**: "Get the Android app" card linking to `/download`.
+- App version aligned to the project: `0.8.0+8`.
+- First published build: **0.8.0+8, 51.3 MB, Android 7.0+ (API 24)** — debug
+  signed, labelled **preview** on the page and in the manifest.
+- Docs: `releases/README.md`, deployment "Publishing a release" section, API
+  reference. Tests: **60 backend** (13 new: page states, MIME/headers, path
+  safety, manifest endpoint), 6 widget tests.
+
 ## [0.7.0] — 2026-11-16
 
 ### Added — Phase A: the data loop

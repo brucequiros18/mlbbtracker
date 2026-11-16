@@ -54,6 +54,10 @@ class Settings(BaseSettings):
     # Empty = auto-detect `<repo>/mobile/build/web` when it exists.
     web_root: str = ""
 
+    # Published app releases (APK + latest.json manifest), served at
+    # /download and /downloads/<file>. Empty = auto-detect `<repo>/releases`.
+    releases_dir: str = ""
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, value: Any) -> Any:
@@ -72,6 +76,13 @@ class Settings(BaseSettings):
         repo_root = Path(__file__).resolve().parents[3]
         candidate = repo_root / "mobile" / "build" / "web"
         return candidate if candidate.is_dir() else None
+
+    def resolved_releases_dir(self) -> Path:
+        """Directory holding published app releases (may not exist yet)."""
+        if self.releases_dir:
+            return Path(self.releases_dir).expanduser()
+        # backend/app/core/config.py -> repo root is three parents up.
+        return Path(__file__).resolve().parents[3] / "releases"
 
 
 @lru_cache

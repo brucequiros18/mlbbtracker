@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/api_config.dart';
 import '../../../core/network/api_exception.dart' show describeError;
@@ -103,6 +105,12 @@ class HomeScreen extends ConsumerWidget {
                 subtitle: 'MPL ID · PH · MY · KH standings',
                 onTap: () => context.push('/esports'),
               ),
+              // Only meaningful in the browser: on Android you already have
+              // the app. The download page lives on the same origin.
+              if (kIsWeb) ...[
+                const SizedBox(height: AppSpacing.md),
+                const _DownloadTile(),
+              ],
               const SizedBox(height: AppSpacing.lg),
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
@@ -223,6 +231,49 @@ class _TrendingCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Web-only entry point to the `/download` release page.
+class _DownloadTile extends StatelessWidget {
+  const _DownloadTile();
+
+  Future<void> _open(BuildContext context) async {
+    final uri = Uri.base.resolve('/download');
+    final opened = await launchUrl(uri, mode: LaunchMode.platformDefault);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open $uri')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return AppCard(
+      onTap: () => _open(context),
+      child: Row(
+        children: [
+          Icon(Icons.android_rounded, color: palette.accent),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Get the Android app', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 2),
+                Text(
+                  'Download the APK from the release page',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.download_rounded, color: palette.textMuted),
+        ],
       ),
     );
   }

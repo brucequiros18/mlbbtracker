@@ -16,6 +16,7 @@ A Mobile Legends: Bang Bang analytics platform — Flutter (Dart) app (Android +
 - **Esports** — MPL Indonesia / Philippines / Malaysia / Cambodia standings, schedules and match details.
 - **Player tracking** — connect **your own** account with a one-time code from your in-game mailbox; real profile, stats (wins, win rate, avg score, MVP count, win streak), match history with K/D/A and W/L, and top heroes. Live-polling every 60 s.
 - **Web app** — the Flutter web build is served by the API from a single origin: one URL, no CORS setup. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+- **Download page** — `/download` serves a real Android APK with version, size, SHA-256 and install steps (`.\scripts\package_apk.ps1` publishes it). Honest "no build published yet" state until one exists.
 - **Original UI** — dark-first "Competitive Minimalism" design system, 5-tab navigation, saved heroes, theming.
 
 ## Repository layout
@@ -38,7 +39,8 @@ mlbb-tracker/
 .\scripts\run_web.ps1            # builds if needed, then serves on :8000
 ```
 
-Open **http://127.0.0.1:8000/** — API docs at `/docs`.
+Open **http://127.0.0.1:8000/** — API docs at `/docs`, Android download at
+`/download`.
 
 ### Backend only
 

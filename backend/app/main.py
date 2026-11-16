@@ -9,10 +9,10 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -25,6 +25,7 @@ from app.core.logging import configure_logging, get_logger
 from app.db.base import get_session_factory
 from app.db.repo import record_provider_health
 from app.integrations.provider_factory import get_providers
+from app.services.release_service import apk_path, read_manifest, render_download_page
 
 logger = get_logger(__name__)
 
@@ -127,6 +128,37 @@ def create_app() -> FastAPI:
             "openapi": "/openapi.json",
             "api": settings.api_v1_prefix,
         }
+
+    # — Download page (registered before the `/` web mount so it wins) ————
+    # Plain server-rendered HTML: indexable and functional without JS.
+    # A missing release renders an honest "not published yet" state.
+    @app.api_route("/download", methods=["GET", "HEAD"], include_in_schema=False)
+    async def download_page() -> HTMLResponse:
+        manifest = read_manifest(settings.resolved_releases_dir())
+        return HTMLResponse(
+            render_download_page(manifest),
+            headers={
+                "Cache-Control": "no-store",
+                "Content-Security-Policy": (
+                    "default-src 'none'; style-src 'unsafe-inline'; "
+                    "img-src data:; base-uri 'none'; form-action 'none'; "
+                    "frame-ancestors 'none'"
+                ),
+            },
+        )
+
+    @app.api_route(
+        "/downloads/{filename}", methods=["GET", "HEAD"], include_in_schema=False
+    )
+    async def download_release_file(filename: str) -> FileResponse:
+        path = apk_path(settings.resolved_releases_dir(), filename)
+        if path is None:
+            raise HTTPException(status_code=404, detail="No such release file.")
+        return FileResponse(
+            path,
+            media_type="application/vnd.android.package-archive",
+            filename=filename,
+        )
 
     # Serve the Flutter web build from the same origin when one is present.
     # Same-origin means no CORS setup and a single deployable unit.

@@ -150,6 +150,50 @@ failure, 15-minute execution limit).
 
 ---
 
+## 8. Publishing an app release (download page)
+
+`/download` is a server-rendered HTML page; it reads
+`releases/latest.json` **per request**, so publishing takes effect without a
+restart.
+
+```powershell
+.\scripts\package_apk.ps1 -Notes "What changed`nSecond line"
+```
+
+The script:
+
+1. runs `flutter build apk --release` in `mobile/`;
+2. copies the APK to `releases/mlbb-tracker-<version>.apk`;
+3. computes its SHA-256 and size;
+4. reads the real `minSdk` from the artifact with `aapt2`;
+5. writes `releases/latest.json` (UTF-8, no BOM).
+
+```
+releases/
+├── latest.json              # manifest — version, size, sha256, notes
+└── mlbb-tracker-0.8.0.apk   # served at /downloads/<file>
+```
+
+Both artifacts are **git-ignored**: the APK is a large binary, and a committed
+manifest pointing at an absent APK would be a broken link. On a fresh clone
+`/download` honestly says "no build published yet".
+
+| Route | Serves |
+|---|---|
+| `GET /download` | the landing page |
+| `GET /downloads/<file>` | the APK (`attachment`, Android MIME type) |
+| `GET /api/v1/app/release` | the manifest as JSON |
+
+### Signing (read this before distributing)
+
+Until a release keystore is configured, Flutter signs release builds with the
+**debug keys**. The manifest records this (`signed_with`) and the page labels
+the build **preview**. Configure `android/key.properties` (never committed) and
+a `signingConfig` in `android/app/build.gradle.kts` before publishing to a
+store.
+
+---
+
 ## Known limitations (honest)
 
 - **Web is desktop-first in layout** — the UI is a mobile app shell rendered in

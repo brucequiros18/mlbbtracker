@@ -57,7 +57,7 @@ if ($Uninstall) {
     return
 }
 
-# — Preconditions ————————————————————————————————————————————————
+# - Preconditions ------------------------------------------------
 if (-not (Test-Path $python)) {
     throw "Python venv not found at $python. Create it first: cd backend; py -m venv .venv"
 }
@@ -105,7 +105,7 @@ Write-Host "  Runs daily at : $Time (local time)"
 Write-Host "  Command       : $python scripts\record_snapshot.py"
 Write-Host "  Working dir   : $backendDir"
 
-# — Optionally run it once now, so the first snapshot exists immediately ————
+# - Optionally run it once now, so the first snapshot exists immediately ----
 if ($RunNow) {
     Push-Location $backendDir
     try {
