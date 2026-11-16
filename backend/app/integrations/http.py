@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import httpx
 
 from app.core.config import Settings
 from app.core.errors import ProviderAuthError, ProviderError, ProviderUnavailableError
+from app.core.health_log import report
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -31,14 +33,28 @@ async def _request_json(
     bearer: str | None = None,
 ) -> Any:
     headers = {"authorization": f"Bearer {bearer}"} if bearer else None
+    started_at = time.monotonic()
     try:
         response = await client.request(method, url, params=params, json=json, headers=headers)
     except httpx.TimeoutException as exc:  # pragma: no cover - network dependent
         logger.warning("provider timeout url=%s", url)
+        report(url, status="error", error_code="timeout", started_at=started_at)
         raise ProviderUnavailableError("The upstream provider timed out.") from exc
     except httpx.HTTPError as exc:  # pragma: no cover - network dependent
         logger.warning("provider transport error url=%s err=%s", url, exc)
+        report(url, status="error", error_code="transport", started_at=started_at)
         raise ProviderUnavailableError("The upstream provider is unreachable.") from exc
+
+    if response.status_code >= 400:
+        report(
+            url,
+            status="error",
+            status_code=response.status_code,
+            error_code=f"http_{response.status_code}",
+            started_at=started_at,
+        )
+    else:
+        report(url, status="ok", status_code=response.status_code, started_at=started_at)
 
     if response.status_code == 401:
         raise ProviderAuthError(

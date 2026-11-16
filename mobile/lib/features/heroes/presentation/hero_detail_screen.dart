@@ -12,6 +12,7 @@ import '../../../shared/widgets/stat_tile.dart';
 import '../../saved/presentation/favorites_providers.dart';
 import '../domain/hero.dart';
 import 'hero_providers.dart';
+import 'history_chart.dart';
 import 'trend_chart.dart';
 
 class HeroDetailScreen extends ConsumerWidget {
@@ -103,6 +104,8 @@ class _HeroDetailBody extends ConsumerWidget {
         ],
         const SizedBox(height: AppSpacing.xl),
         _TrendSection(heroId: heroId),
+        const SizedBox(height: AppSpacing.xl),
+        _HistorySection(heroId: heroId),
         if (hero.skills.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
           const SectionHeader(title: 'Skills'),
@@ -173,6 +176,38 @@ class _TrendSection extends ConsumerWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           data: (points) => AppCard(child: HeroTrendChart(points: points)),
+        ),
+      ],
+    );
+  }
+}
+
+/// Snapshots the backend recorded itself — our own observation log.
+///
+/// Kept visually and conceptually separate from the provider trend above:
+/// the provider's timeline is upstream truth, this is what we saw.
+class _HistorySection extends ConsumerWidget {
+  const _HistorySection({required this.heroId});
+
+  final int heroId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(heroHistoryProvider(heroId.toString()));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader(
+          title: 'Our Observations',
+          subtitle: 'Daily snapshots recorded by this backend',
+        ),
+        history.when(
+          loading: () => const SizedBox(height: 120, child: LoadingView()),
+          error: (e, _) => Text(
+            'Recorded history is unavailable right now.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          data: (points) => AppCard(child: HeroHistoryChart(points: points)),
         ),
       ],
     );

@@ -150,6 +150,17 @@ for the esports standings endpoint (verified: fails, then succeeds on retry
 with 9 rows). The app renders its retry state instead of breaking — captured
 in a screenshot. This is provider-side, not an application defect.
 
+## 5d. Phase A — data loop (recorded history, DB cache, provider health)
+
+| Scenario | Evidence |
+|---|---|
+| Daily snapshot job | `scripts/install_snapshot_task.ps1` registers **"MLBB Tracker - Daily Snapshot"** (Task Scheduler, daily 03:15 local); `record_snapshot.py` verified idempotent — re-run on the same day inserts 0 rows |
+| Recorded history accumulates | `hero_snapshots` holds 133 rows for each of 2026-11-14 and 2026-11-15 (two real UTC days); Masha: 60.70% → 60.26% |
+| History chart states | Widget tests cover ≥2 points (line + count caption), 1 point (honest single-snapshot note, no line), 0 points ("No snapshots recorded yet") |
+| DB cache tier | `cache_read`/`cache_write` unit tests: round-trip, miss, TTL expiry + purge-on-read, refresh-in-place |
+| Provider health log | `record_provider_health`/`recent_provider_health` unit tests + `GET /health/history` endpoint tests (shape, empty state, limit validation) |
+| Totals | **47 backend tests** (was 35), **6 widget tests** (was 3), `flutter analyze` clean |
+
 ## 6. Not yet tested (honest gaps)
 
 - **On-device run** on `Medium_Phone_API_36.1` (Milestone 7).

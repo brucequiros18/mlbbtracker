@@ -16,4 +16,10 @@ abstract interface class HeroRepository {
 
   /// Daily win/ban/pick timeline for one hero, ascending by date.
   Future<List<HeroTrendPoint>> heroTrends(String identifier, {int days});
+
+  /// Snapshots the backend recorded itself, ascending by capture date.
+  ///
+  /// Empty until the backend has observed at least one live rankings fetch;
+  /// recorded data is never synthesized.
+  Future<List<HeroHistoryPoint>> heroHistory(String identifier);
 }

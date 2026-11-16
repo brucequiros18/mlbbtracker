@@ -56,6 +56,12 @@ final heroTrendsProvider =
   return ref.watch(heroRepositoryProvider).heroTrends(query.identifier, days: query.days);
 });
 
+/// Snapshots recorded by the backend itself (our own observations).
+final heroHistoryProvider =
+    FutureProvider.autoDispose.family<List<HeroHistoryPoint>, String>((ref, identifier) {
+  return ref.watch(heroRepositoryProvider).heroHistory(identifier);
+});
+
 final heroRankingsProvider = FutureProvider.autoDispose<List<HeroRankStat>>((ref) {
   final days = ref.watch(rankingDaysProvider);
   final sort = ref.watch(rankingSortProvider);

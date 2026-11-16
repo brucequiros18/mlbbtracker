@@ -25,6 +25,20 @@ Capability + provider summary.
 ### `GET /health/providers`
 Live reachability probe of each provider (`up`/`down`) with a hero count.
 
+### `GET /health/history?limit=50`
+The **recorded** provider call log — what actually happened, as persisted by
+previous requests (no upstream calls are made). Every live provider request is
+appended with its status, latency and error code, so outages (e.g. the
+intermittent 503s from `arena.rone.dev`) leave a trace instead of being silent.
+```json
+{"status":"ok","count":2,"events":[
+  {"provider":"rone_arena","endpoint":"/api/heroes/rank","status":"ok",
+   "statusCode":200,"latencyMs":412,"errorCode":null,"checkedAt":"2026-11-15T21:07:42+00:00"},
+  {"provider":"rone_arena","endpoint":"/api/esports/id/standings","status":"error",
+   "statusCode":503,"errorCode":"http_503","checkedAt":"2026-11-15T21:07:50+00:00"}]}
+```
+`limit` ∈ `1..200` (default `50`), newest first.
+
 ### `GET /heroes`
 Query: `role` (e.g. `Tank`), `lane` (e.g. `Roam`). Returns `HeroSummary[]`:
 ```json

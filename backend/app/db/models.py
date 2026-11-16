@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, Float, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Date, DateTime, Float, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -67,3 +67,39 @@ class PlayerSession(Base):
     )
 
 
+
+
+class ApiCacheEntry(Base):
+    """Persistent provider-response cache (survives a backend restart).
+
+    The in-process TTL cache is the hot tier; this table is the cold tier that
+    keeps a restart from re-fetching the full hero catalog from upstream.
+    """
+
+    __tablename__ = "api_cache"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    cache_key: Mapped[str] = mapped_column(String(160), unique=True, index=True, nullable=False)
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload: Mapped[dict | list] = mapped_column(JSON, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class ProviderHealthEvent(Base):
+    """One observed provider call: reachability, latency and status."""
+
+    __tablename__ = "provider_health"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    provider: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    endpoint: Mapped[str] = mapped_column(String(160), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)  # ok | error
+    status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error_code: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    checked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )

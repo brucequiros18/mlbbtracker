@@ -116,8 +116,37 @@ server {
 |---|---|---|
 | API | `uvicorn app.main:app --host 0.0.0.0 --port 8000` | from `backend/` |
 | Web build | `flutter build web --release` | from `mobile/` |
-| Snapshot job | `python scripts/record_snapshot.py` | schedule daily (Windows Task Scheduler / cron) |
+| Snapshot job | `python scripts/record_snapshot.py` | schedule daily (see below) |
 | Migrations | `alembic upgrade head` | run once per deploy |
+
+---
+
+## 7. Daily snapshot job
+
+The recorded-history charts only grow if something snapshots the meta once a
+day. `backend/scripts/record_snapshot.py` fetches the live 7-day rankings and
+writes **one row per hero per UTC day** — idempotent, so re-runs and retries
+never duplicate data.
+
+### Windows (Task Scheduler) — one command
+
+```powershell
+.\scripts\install_snapshot_task.ps1 -RunNow     # install + first snapshot
+.\scripts\install_snapshot_task.ps1 -Uninstall  # remove
+```
+
+Creates task **"MLBB Tracker - Daily Snapshot"** (default 03:15 local, runs
+whether or not you are logged on, no password stored, restarts twice on
+failure, 15-minute execution limit).
+
+### Linux / macOS (cron)
+
+```cron
+15 3 * * * cd /srv/mlbb-tracker/backend && .venv/bin/python scripts/record_snapshot.py >> snapshot.log 2>&1
+```
+
+> Prefer a UTC-hour shortly after Moonton's daily reset for consistent
+> day-over-day deltas.
 
 ---
 

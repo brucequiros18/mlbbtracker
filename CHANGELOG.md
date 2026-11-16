@@ -40,6 +40,29 @@ versions use Semantic Versioning.
   exposes them. The app shows a clear explanation and never fabricates data.
 - MLBB Tracker is unofficial and not affiliated with Moonton.
 
+## [0.7.0] — 2026-11-16
+
+### Added — Phase A: the data loop
+- **Scheduled snapshots**: `scripts/install_snapshot_task.ps1` registers a
+  Windows Task Scheduler job (daily 03:15 local) running the idempotent
+  `backend/scripts/record_snapshot.py` (one row per hero per UTC day); cron
+  line documented in `docs/DEPLOYMENT.md`.
+- **Recorded history in the app**: hero detail now shows an **"Our
+  Observations"** section (distinct colour + caption) fed by
+  `GET /heroes/{id}/history` — the backend's own daily snapshots, never
+  blended with the provider's trend. Honest states: 0 points → "No snapshots
+  recorded yet", 1 point → single-snapshot note (no line drawn).
+- **DB-backed cache tier**: new `api_cache` table (migration
+  `264514ec345c`) is the cold tier behind the in-process TTL cache — a backend
+  restart no longer re-fetches the full catalog/rankings upstream.
+- **Provider health log**: every live provider call is recorded to the new
+  `provider_health` table (status, status code, latency, error code) via a
+  sink wired at startup; visible at `GET /api/v1/health/history` (newest
+  first, `limit` 1–200). Outages like the intermittent upstream 503s now
+  leave a trace.
+- Tests: **47 backend** (cache tier, health log, `/health/history`, limit
+  validation), **6 widget tests** (history chart states).
+
 ## [0.6.0] — 2026-11-15
 
 ### Added — deployable web app (single origin)

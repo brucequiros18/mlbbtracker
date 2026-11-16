@@ -16,29 +16,43 @@ before the next begins.
 | 7 | QA (automated tests, device testing, perf, security) | 🟡 Automated tests green; device pass pending |
 | 8 | Release prep (APK, icon, metadata) | ⬜ Not started |
 
+**Phase A — data loop: ✅ complete (0.7.0).** Daily snapshots are scheduled
+(Windows Task Scheduler / cron), the app renders the recorded history as a
+separate "Our Observations" chart, `api_cache` is a live DB-backed cold tier,
+and every provider call is logged to `provider_health` (visible at
+`/health/history`).
+
 ## What exists now
 
-- **Repo**: `mobile/` (Flutter), `backend/` (FastAPI), `database/`, `docs/`.
+- **Repo**: `mobile/` (Flutter), `backend/` (FastAPI), `database/`, `docs/`,
+  `scripts/`.
 - **Mobile**: design system, 5-tab shell (GoRouter `StatefulShellRoute`),
   Riverpod providers, Dio repositories, feature-based folders, saved heroes,
-  light/dark theming, error/empty/loading states.
-- **Backend**: provider adapters (Rone Arena, MLBBDex), normalization + TTL
-  cache, `/heroes`, `/heroes/rankings`, `/heroes/{id}`, `/health`,
-  `/players/...` (consented connect flow + `/players/me/*`), typed error
-  envelope, CORS, OpenAPI.
-- **Tests**: 34 backend tests (offline) + 3 widget tests; live smoke script.
+  light/dark theming, error/empty/loading states, consented player connect +
+  live dashboard, hero detail with provider trend **and** recorded-history
+  charts.
+- **Backend**: provider adapters (Rone Arena, MLBBDex), normalization +
+  two-tier cache (in-process TTL + `api_cache` table), `/heroes`,
+  `/heroes/rankings`, `/heroes/{id}`, `/heroes/{id}/trends`,
+  `/heroes/{id}/history`, `/health`, `/health/providers`,
+  `/health/history`, `/players/...` (consented connect flow + `/players/me/*`),
+  typed error envelope, CORS, security headers, OpenAPI, single-origin web
+  serving.
+- **Ops**: `scripts/record_snapshot.py` + `scripts/install_snapshot_task.ps1`
+  (daily idempotent snapshot), `scripts/run_web.ps1`.
+- **Tests**: 47 backend tests (offline) + 6 widget tests; live smoke script.
 
 ## Next steps
 
-1. **Milestone 3+ — persistence**: Alembic migrations; move `api_cache` and hero
-   snapshots into Postgres; scheduled refresh job; provider health log.
-2. **Milestone 5 — analytics**: ✅ 7-day win-rate trend (FL Chart) shipped.
-   Remaining: longer windows, patch-over-patch deltas, hero comparison.
-3. **Milestone 6 — breadth**: esports standings screens, player comparison,
-   hero counter/synergy explorer.
-4. **Milestone 7 — QA**: run on `Medium_Phone_API_36.1`; integration tests app↔API;
-   performance/size profile; security review (CORS hardening, rate limiting).
-5. **Milestone 8 — release**: app icon + metadata, signed APK, store checklist.
+1. **Download page**: `/download` landing page + APK release pipeline
+   (`releases/latest.json` manifest, packaging script).
+2. **Milestone 5 — analytics**: hero comparison (2–3 heroes side by side),
+   counter/synergy explorer (`/academy/heroes/{id}/builds`, `/counters`).
+3. **Milestone 7 — QA**: run on `Medium_Phone_API_36.1` (software GPU flags);
+   integration tests app↔API; performance/size profile; security review
+   (CORS hardening, rate limiting, token encryption at rest).
+4. **Milestone 8 — release**: app icon + metadata, release keystore +
+   signed APK, store checklist.
 
 ## Player-data decision (updated)
 

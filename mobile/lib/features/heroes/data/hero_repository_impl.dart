@@ -78,4 +78,17 @@ class HeroRepositoryImpl implements HeroRepository {
       throw ApiException.fromDio(e);
     }
   }
+
+  @override
+  Future<List<HeroHistoryPoint>> heroHistory(String identifier) async {
+    try {
+      final res = await _dio.get<Map<String, dynamic>>('/heroes/$identifier/history');
+      final data = (res.data?['data'] as List?) ?? const [];
+      return data
+          .map((e) => HeroHistoryPoint.fromJson(e as Map<String, dynamic>))
+          .toList(growable: false);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
 }

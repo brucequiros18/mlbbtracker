@@ -9,7 +9,7 @@ from collections.abc import Callable, Sequence
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import HeroSnapshot, PlayerSession
+from app.db.models import ApiCacheEntry, HeroSnapshot, PlayerSession, ProviderHealthEvent
 from app.integrations.models import RankingEntry
 
 
@@ -74,6 +74,91 @@ def history_for_hero(
                 select(HeroSnapshot)
                 .where(HeroSnapshot.hero_id == hero_id, HeroSnapshot.days == days)
                 .order_by(HeroSnapshot.captured_on.asc(), HeroSnapshot.id.asc())
+            )
+        )
+
+
+# — Provider response cache (cold tier) ———————————————————————————
+
+
+def cache_read(
+    session_factory: Callable[[], Session], key: str
+) -> dict | list | None:
+    """Return a cached payload if present and not expired, else None."""
+    now = dt.datetime.now(dt.timezone.utc)
+    with session_factory() as session:
+        row = session.scalar(select(ApiCacheEntry).where(ApiCacheEntry.cache_key == key))
+        if row is None:
+            return None
+        expires_at = row.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=dt.timezone.utc)
+        if expires_at <= now:
+            session.delete(row)
+            session.commit()
+            return None
+        return row.payload
+
+
+def cache_write(
+    session_factory: Callable[[], Session],
+    key: str,
+    provider: str,
+    payload: dict | list,
+    ttl: int,
+) -> None:
+    """Store (or refresh) a cached payload with a TTL in seconds."""
+    now = dt.datetime.now(dt.timezone.utc)
+    with session_factory() as session:
+        row = session.scalar(select(ApiCacheEntry).where(ApiCacheEntry.cache_key == key))
+        if row is None:
+            row = ApiCacheEntry(cache_key=key, provider=provider, payload=payload)
+            session.add(row)
+        row.provider = provider
+        row.payload = payload
+        row.expires_at = now + dt.timedelta(seconds=ttl)
+        row.created_at = now
+        session.commit()
+
+
+# — Provider health log ——————————————————————————————————————————
+
+
+def record_provider_health(
+    session_factory: Callable[[], Session],
+    *,
+    provider: str,
+    endpoint: str,
+    status: str,
+    status_code: int | None = None,
+    latency_ms: int | None = None,
+    error_code: str | None = None,
+) -> None:
+    """Append one provider call outcome to the health log."""
+    with session_factory() as session:
+        session.add(
+            ProviderHealthEvent(
+                provider=provider,
+                endpoint=endpoint,
+                status=status,
+                status_code=status_code,
+                latency_ms=latency_ms,
+                error_code=error_code,
+            )
+        )
+        session.commit()
+
+
+def recent_provider_health(
+    session_factory: Callable[[], Session], *, limit: int = 50
+) -> list[ProviderHealthEvent]:
+    """Most recent health events, newest first."""
+    with session_factory() as session:
+        return list(
+            session.scalars(
+                select(ProviderHealthEvent)
+                .order_by(ProviderHealthEvent.checked_at.desc(), ProviderHealthEvent.id.desc())
+                .limit(limit)
             )
         )
 

@@ -19,6 +19,7 @@ from app.core.config import Settings
 from app.core.errors import AppError, NotFoundError
 from app.core.logging import get_logger
 from app.db.models import HeroSnapshot
+from app.db.repo import cache_read, cache_write
 from app.integrations.models import HeroRef, TrendPoint, normalize_hero_name
 from app.integrations.provider_factory import Providers
 from app.schemas.hero import (
@@ -71,6 +72,14 @@ class HeroService:
         if isinstance(cached, list):
             return cached
 
+        # Cold tier: a restart should not re-fetch the whole catalog upstream.
+        stored = self._cache_read(key)
+        if stored is not None:
+            heroes = [HeroSummary(**row) for row in stored]
+            cache.set(key, heroes, self._settings.cache_ttl_catalog)
+            logger.info("catalog: served from database cache")
+            return heroes
+
         refs: list[HeroRef] = await self._providers.identity().fetch_hero_refs()
 
         metas = []
@@ -97,6 +106,7 @@ class HeroService:
             )
 
         cache.set(key, heroes, self._settings.cache_ttl_catalog)
+        self._cache_write(key, heroes)
         return heroes
 
     async def _tier_map(self) -> dict[str, str | None]:
@@ -125,6 +135,13 @@ class HeroService:
         if isinstance(cached, list):
             return cached
 
+        stored = self._cache_read(key)
+        if stored is not None:
+            rows = [HeroRanking(**row) for row in stored]
+            cache.set(key, rows, self._settings.cache_ttl_rankings)
+            logger.info("rankings: served from database cache")
+            return rows
+
         entries = await self._providers.ranking().fetch_rankings(
             days=days, rank=rank, sort_field=sort_field
         )
@@ -150,6 +167,7 @@ class HeroService:
 
         rows.sort(key=lambda r: getattr(r, sort_field, r.win_rate), reverse=True)
         cache.set(key, rows, self._settings.cache_ttl_rankings)
+        self._cache_write(key, rows)
 
         # Persist a daily snapshot of the raw provider entries (7-day window
         # only — the canonical analytics window). Failures never break the API.
@@ -237,6 +255,37 @@ class HeroService:
                     win_rate=row.win_rate, ban_rate=row.ban_rate, pick_rate=row.pick_rate
                 )
         return None
+
+    # — Internals ————————————————————————————————————————————————
+    def _cache_read(self, key: str) -> list[dict] | None:
+        """Read a payload from the database cache tier (cold storage)."""
+        if self._session_factory is None:
+            return None
+        try:
+            payload = cache_read(self._session_factory, key)
+        except Exception:  # noqa: BLE001 — cache problems must not break the API
+            logger.exception("cache read failed for %s", key)
+            return None
+        if isinstance(payload, list) and all(isinstance(row, dict) for row in payload):
+            return payload
+        return None
+
+    def _cache_write(self, key: str, rows: list) -> None:
+        """Persist normalized rows to the database cache tier."""
+        if self._session_factory is None:
+            return
+        try:
+            cache_write(
+                self._session_factory,
+                key,
+                "rone_arena+mlbbdex",
+                [row.model_dump() for row in rows],
+                self._settings.cache_ttl_rankings
+                if key.startswith("rankings")
+                else self._settings.cache_ttl_catalog,
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception("cache write failed for %s", key)
 
     @staticmethod
     def _resolve(catalog: list[HeroSummary], identifier: str) -> HeroSummary | None:

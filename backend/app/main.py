@@ -20,10 +20,18 @@ from app import __version__
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.errors import AppError
+from app.core.health_log import set_health_sink
 from app.core.logging import configure_logging, get_logger
+from app.db.base import get_session_factory
+from app.db.repo import record_provider_health
 from app.integrations.provider_factory import get_providers
 
 logger = get_logger(__name__)
+
+
+def _health_sink(**kwargs) -> None:
+    """Persist provider call outcomes (used by the health log)."""
+    record_provider_health(get_session_factory(), **kwargs)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -49,7 +57,9 @@ async def lifespan(app: FastAPI):
     configure_logging()
     settings = get_settings()
     logger.info("starting %s v%s (%s)", settings.app_name, __version__, settings.environment)
+    set_health_sink(_health_sink)
     yield
+    set_health_sink(None)
     await get_providers().aclose()
     logger.info("shutdown complete")
 

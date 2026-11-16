@@ -3,14 +3,15 @@
 Target: **PostgreSQL (Supabase)**. Schema is defined in
 [`database/schema.sql`](../database/schema.sql).
 
-> **Status.** The backend now persists data through **SQLAlchemy 2 + Alembic**
-> (`backend/migrations/`, initial revision `16af8bfd4fb2`). Development runs on
-> SQLite (`backend/mlbb_tracker.db`, git-ignored); production points
+> **Status.** The backend persists data through **SQLAlchemy 2 + Alembic**
+> (`backend/migrations/`; revisions `16af8bfd4fb2` heroes, `3dbed8e9151e`
+> player sessions, `264514ec345c` api cache + provider health). Development
+> runs on SQLite (`backend/mlbb_tracker.db`, git-ignored); production points
 > `MLBB_DATABASE_URL` at a Supabase Postgres URL — same models, same
-> migrations (install `psycopg2-binary` for Postgres). Tables below in
-> `schema.sql` that are not yet runtime-managed (players, favorites,
-> `api_cache`) come with the next persistence increments. No fabricated data
-> is seeded.
+> migrations (install `psycopg2-binary` for Postgres). **Live tables:**
+> `hero_snapshots`, `player_sessions`, `api_cache`, `provider_health`.
+> The remaining tables below are design targets for future increments
+> (favorites still live on-device). No fabricated data is seeded.
 
 ## Design principles
 

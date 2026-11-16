@@ -126,6 +126,39 @@ class HeroTrendPoint {
       );
 }
 
+/// One recorded daily snapshot written by the backend.
+///
+/// This is **our own observation** of the meta, not a provider-supplied
+/// timeline — it is kept in a separate model so the two are never blended.
+@immutable
+class HeroHistoryPoint {
+  const HeroHistoryPoint({
+    required this.capturedOn,
+    required this.winRate,
+    required this.banRate,
+    required this.pickRate,
+    this.tier,
+    this.rankPosition,
+  });
+
+  /// ISO date (UTC) the snapshot was captured on.
+  final String capturedOn;
+  final double winRate;
+  final double banRate;
+  final double pickRate;
+  final String? tier;
+  final int? rankPosition;
+
+  factory HeroHistoryPoint.fromJson(Map<String, dynamic> json) => HeroHistoryPoint(
+        capturedOn: json['capturedOn'] as String? ?? '',
+        winRate: (json['winRate'] as num?)?.toDouble() ?? 0,
+        banRate: (json['banRate'] as num?)?.toDouble() ?? 0,
+        pickRate: (json['pickRate'] as num?)?.toDouble() ?? 0,
+        tier: json['tier'] as String?,
+        rankPosition: (json['rankPosition'] as num?)?.toInt(),
+      );
+}
+
 /// Full hero profile including skills and relationship lists.
 @immutable
 class HeroDetail {
