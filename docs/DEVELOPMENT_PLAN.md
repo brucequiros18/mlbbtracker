@@ -47,6 +47,12 @@ version, size, SHA-256, notes and install steps; `scripts/package_apk.ps1`
 builds and publishes it; the page degrades to an honest "not published yet"
 state when nothing exists.
 
+**Installable web app: ✅ complete (0.9.0).** A real manifest, generated icons
+and a service worker make the web build installable from the browser and
+usable offline: the shell and CanvasKit are precached, navigations fall back to
+the cached shell, and API responses are never cached (offline shows honest
+error states). Install is offered on `/download` and via the address bar.
+
 ## Next steps
 
 1. **Milestone 5 — analytics**: hero comparison (2–3 heroes side by side),

@@ -15,11 +15,13 @@
   <meta property="og:description" content="Hero meta, esports standings and your own match history for Mobile Legends: Bang Bang.">
   <meta property="og:type" content="website">
 
-  <!-- iOS meta tags & icons -->
+  <!-- Installable web app (PWA) -->
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MLBB Tracker">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="application-name" content="MLBB Tracker">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
@@ -93,6 +95,17 @@
       boot.style.opacity = '0';
       setTimeout(function () { boot.remove(); }, 320);
     });
+
+    // Register our own service worker: installable app + offline shell.
+    // Flutter's deprecated worker is deliberately not loaded (see
+    // flutter_bootstrap.js), so this registration is the only one.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function (error) {
+          console.warn('Service worker registration failed:', error);
+        });
+      });
+    }
   </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>

@@ -171,10 +171,35 @@ in a screenshot. This is provider-side, not an application defect.
 | Honest empty state | With no `latest.json`, the page says "No public APK has been published" and shows **no** download link (covered by backend tests) |
 | Corrupt / unsafe manifest | Non-JSON and traversal filenames in `latest.json` are ignored → empty state |
 | Manifest JSON | `GET /api/v1/app/release` → 200 with version, size, sha256, notes; `404 NOT_FOUND` when unpublished |
-| CSP | Page sends `default-src 'none'; style-src 'unsafe-inline'; …`; page contains **no JavaScript** |
+| CSP | Page sends `default-src 'none'; style-src 'unsafe-inline'; …`; the only script is the install helper, pinned by SHA-256 (see 5f) |
 | Layout | Screenshots at 1280×950 and 390×844 (buttons go full-width on phones); 0 console errors |
 | App entry point | Web Home shows the "Get the Android app" card (web-only; hidden on Android) |
 | Totals | **60 backend tests** (was 47), **6 widget tests**, `flutter analyze` clean |
+
+## 5f. Installable web app (PWA, release build)
+
+Verified in Chromium via Playwright against the single-origin deployment
+(`http://127.0.0.1:8000`), with a fresh browser context each run.
+
+| Scenario | Evidence |
+|---|---|
+| Manifest | `GET /manifest.json` -> 200 `application/json`; name, `/` start URL, scope, standalone, `#111318` theme/background, 4 icons (192/512 in `any` + `maskable`), 3 shortcuts |
+| Icons are real | 192/512 PNGs are the generated analytics mark (not Flutter defaults); Apple touch icon 180 px, favicon 64 px |
+| Worker registers | `navigator.serviceWorker.ready` -> scope `/`, state `activated`, script `/sw.js`, page **controlled** |
+| Precache | `mlbb-shell-v1` holds 11 entries (shell, `main.dart.js`, bootstrap, manifest, icons); `mlbb-static-v1` holds the CanvasKit set (`canvaskit.wasm`, `chromium/canvaskit.wasm`, skwasm) |
+| **Offline reload** | `context.set_offline(True)` + reload -> the app shell paints, canvas present, Home shows its honest error state ("Cannot reach the MLBB Tracker server… Try again") - see `pwa_offline.png` |
+| API is never cached | Offline, `/api/v1/heroes/rankings` fails with `ERR_INTERNET_DISCONNECTED` and is **not** answered from cache - no stale numbers presented as live |
+| CanvasKit offline | Bundled locally (`--no-web-resources-cdn`); `/canvaskit/chromium/canvaskit.js` + `.wasm` served from cache offline |
+| `/download` install card | "Install the web app" card renders with manual instructions; the button stays hidden until `beforeinstallprompt` fires (headless Chromium never fires it) |
+| CSP hash | The page's single inline script is pinned by SHA-256 in `script-src` (no `'unsafe-inline'`), with `manifest-src`/`worker-src`; verified by a backend test that re-hashes the served script |
+| Escaping | A hostile manifest (`<script>`, `<img onerror>`, event handler in `channel`) is escaped / sanitised - verified by test |
+| Regression guards | `test_pwa_assets.py`: manifest fields, icon files and PNG dimensions, shortcut routes, worker precache list + API exclusions, index registers `sw.js` (not `flutter_service_worker.js`), bootstrap has no `serviceWorkerSettings` |
+| Totals | **69 backend tests** (was 60), **6 widget tests**, `flutter analyze` clean |
+
+**Known gap:** offline, missing-glyph fallback fonts and `google_fonts` assets
+are unavailable from gstatic.com; the app falls back to system fonts and the
+console logs repeated font-fetch warnings (154-181 per offline run). Rendering
+and navigation are unaffected. See `docs/DEPLOYMENT.md` section 9.
 
 ## 6. Not yet tested (honest gaps)
 

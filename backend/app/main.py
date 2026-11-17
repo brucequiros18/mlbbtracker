@@ -25,7 +25,12 @@ from app.core.logging import configure_logging, get_logger
 from app.db.base import get_session_factory
 from app.db.repo import record_provider_health
 from app.integrations.provider_factory import get_providers
-from app.services.release_service import apk_path, read_manifest, render_download_page
+from app.services.release_service import (
+    DOWNLOAD_CSP,
+    apk_path,
+    read_manifest,
+    render_download_page,
+)
 
 logger = get_logger(__name__)
 
@@ -139,11 +144,7 @@ def create_app() -> FastAPI:
             render_download_page(manifest),
             headers={
                 "Cache-Control": "no-store",
-                "Content-Security-Policy": (
-                    "default-src 'none'; style-src 'unsafe-inline'; "
-                    "img-src data:; base-uri 'none'; form-action 'none'; "
-                    "frame-ancestors 'none'"
-                ),
+                "Content-Security-Policy": DOWNLOAD_CSP,
             },
         )
 
@@ -175,7 +176,7 @@ def create_app() -> FastAPI:
                 "docs": "/docs",
                 "openapi": "/openapi.json",
                 "api": settings.api_v1_prefix,
-                "web": "not built — run `flutter build web --release` in mobile/",
+                "web": "not built — run `flutter build web --release --no-web-resources-cdn` in mobile/",
             }
 
     return app

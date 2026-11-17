@@ -15,15 +15,15 @@ Browser ──► http://host:8000/            → Flutter web app (static files
 
 ```powershell
 .\scripts\run_web.ps1            # builds if needed, then serves on :8000
-.\scripts\run_web.ps1 -Rebuild   # force a fresh `flutter build web --release`
+.\scripts\run_web.ps1 -Rebuild   # force a fresh web build (see the PWA section)
 ```
 
-Then open **http://127.0.0.1:8000/** — API docs at `/docs`.
+Then open **http://127.0.0.1:8000/** - API docs at `/docs`.
 
 The script does exactly:
 
 ```powershell
-cd mobile; flutter build web --release; cd ..
+cd mobile; flutter build web --release --no-web-resources-cdn; cd ..
 cd backend; .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -37,7 +37,7 @@ S3 + CloudFront, nginx) and point the app at the API host at build time:
 
 ```powershell
 cd mobile
-flutter build web --release --dart-define=API_BASE_URL=https://api.example.com
+flutter build web --release --no-web-resources-cdn --dart-define=API_BASE_URL=https://api.example.com
 ```
 
 On the API host, allow the web origin:
@@ -115,7 +115,7 @@ server {
 | Process | Command | Notes |
 |---|---|---|
 | API | `uvicorn app.main:app --host 0.0.0.0 --port 8000` | from `backend/` |
-| Web build | `flutter build web --release` | from `mobile/` |
+| Web build | `flutter build web --release --no-web-resources-cdn` | from `mobile/` |
 | Snapshot job | `python scripts/record_snapshot.py` | schedule daily (see below) |
 | Migrations | `alembic upgrade head` | run once per deploy |
 
@@ -194,14 +194,67 @@ store.
 
 ---
 
+## 9. Installable web app (PWA)
+
+The web build is a real PWA: it can be installed from the browser and keeps
+working offline. Three source files in `mobile/web/` make it happen, and the
+build copies them verbatim:
+
+| File | Role |
+|---|---|
+| `manifest.json` | name, `/` start URL and scope, standalone display, icons (any + maskable), shortcuts |
+| `sw.js` | the service worker - caches the shell, never the API |
+| `flutter_bootstrap.js` | loads Flutter **without** its deprecated service worker, which would replace ours |
+
+### Building
+
+Always pass `--no-web-resources-cdn` (bundling CanvasKit locally), otherwise
+the renderer is fetched from gstatic.com and the first offline launch fails:
+
+```powershell
+flutter build web --release --no-web-resources-cdn
+```
+
+### What the service worker caches
+
+- **Precached on install**: the app shell (`index.html`, `main.dart.js`,
+  bootstrap, manifest, icons) and the CanvasKit renderer, so the app paints
+  with no network at all.
+- **Navigations**: network-first with a cached-shell fallback.
+- **Static assets**: stale-while-revalidate (fast, self-updating).
+- **`/canvaskit/`**: cache-first (large, immutable per build).
+- **Never cached**: everything under `/api/`, `/download`, `/downloads/`,
+  `/docs`. Offline, the app shows its own error states instead of stale
+  numbers - stale data presented as live would be fabricated data.
+
+Cache names are versioned (`mlbb-shell-v1`); **bump `CACHE_VERSION` in
+`sw.js` when you publish a new build** and the activate handler deletes the
+old caches. Without a bump, users get the new app on their second visit.
+
+### Installing
+
+Install criteria (Chrome/Edge): HTTPS or localhost, a valid manifest with
+192+512 icons, and an active service worker. Users can install from the
+address bar, or from the **Install the web app** card on `/download`, which
+drives `beforeinstallprompt` when the browser offers it and falls back to
+manual instructions (Chrome Android: *Add to Home screen*; Safari iOS:
+*Add to Home Screen*).
+
+### Fonts (known gap)
+
+`google_fonts` (Inter/Manrope) and Flutter's missing-glyph fallbacks are
+fetched from fonts.gstatic.com and served from the browser's HTTP cache.
+Offline-first visits fall back to system fonts - the app renders correctly,
+just with different type. Bundle the TTFs in `pubspec.yaml` if pixel-identical
+offline typography matters.
+
+---
+
 ## Known limitations (honest)
 
-- **Web is desktop-first in layout** — the UI is a mobile app shell rendered in
+- **Web is desktop-first in layout** - the UI is a mobile app shell rendered in
   a browser; it is responsive down to phone widths, which is how it is tested.
-- **CanvasKit is fetched from gstatic.com** by default. For a fully offline or
-  CSP-restricted deployment, build with `--wasm` and self-host the renderer, or
-  bundle canvaskit locally.
-- **No server-side rendering / SEO** — the app is a Flutter canvas; metadata
-  and an installable manifest are provided, but content is not indexable.
+- **No server-side rendering / SEO** - the app is a Flutter canvas; the
+  manifest and `/download` page are indexable, but app content is not.
 - **The provider can return transient 503s** (observed from `arena.rone.dev`).
   The app shows a retry state; the API caches successful responses.

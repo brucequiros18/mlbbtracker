@@ -1,35 +1,66 @@
 {
-    "name": "MLBB Tracker",
-    "short_name": "MLBB Tracker",
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#111318",
-    "theme_color": "#111318",
-    "description": "Hero meta, esports standings and your own match history for Mobile Legends: Bang Bang.",
-    "orientation": "portrait-primary",
-    "prefer_related_applications": false,
-    "icons": [
-        {
-            "src": "icons/Icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        },
-        {
-            "src": "icons/Icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        },
-        {
-            "src": "icons/Icon-maskable-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "maskable"
-        },
-        {
-            "src": "icons/Icon-maskable-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "maskable"
-        }
-    ]
+  "id": "/",
+  "name": "MLBB Tracker — Hero Meta & Esports",
+  "short_name": "MLBB Tracker",
+  "description": "Mobile Legends: Bang Bang hero meta, recorded history, esports standings and your own tracked match stats — live data, no fabrication.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#111318",
+  "theme_color": "#111318",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["sports", "entertainment", "utilities"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icons/Icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/Icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/Icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/Icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Heroes",
+      "short_name": "Heroes",
+      "description": "Hero meta, win rates and trends",
+      "url": "/#/heroes",
+      "icons": [{ "src": "icons/Icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Esports",
+      "short_name": "Esports",
+      "description": "MPL standings for ID, PH, MY and KH",
+      "url": "/#/esports",
+      "icons": [{ "src": "icons/Icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Leaderboards",
+      "short_name": "Ranks",
+      "description": "Hero leaderboards",
+      "url": "/#/leaderboards",
+      "icons": [{ "src": "icons/Icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
 }

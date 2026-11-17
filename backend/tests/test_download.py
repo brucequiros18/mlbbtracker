@@ -7,7 +7,10 @@ than a broken link.
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
+import re
 
 import pytest
 from fastapi.testclient import TestClient
@@ -99,6 +102,62 @@ def test_download_page_ignores_manifest_with_unsafe_filename(releases_client):
     resp = client.get("/download")
 
     assert "No public APK has been published" in resp.text
+
+
+# — Web app installation ———————————————————————————————————————————————
+
+
+def test_download_page_offers_web_app_installation(releases_client):
+    client, _releases = releases_client
+
+    resp = client.get("/download")
+    body = resp.text
+
+    assert "Install the web app" in body
+    assert 'id="install-button"' in body
+    assert 'id="install-status"' in body
+    assert 'rel="manifest" href="/manifest.json"' in body
+    # The page registers the service worker so a first-time visitor can install.
+    assert "serviceWorker.register('/sw.js')" in body
+
+
+def test_download_page_csp_pins_the_only_inline_script(releases_client):
+    client, _releases = releases_client
+
+    resp = client.get("/download")
+    csp = resp.headers["content-security-policy"]
+
+    scripts = re.findall(r"<script>(.*?)</script>", resp.text, re.S)
+    assert len(scripts) == 1, "the page should carry exactly one inline script"
+
+    digest = base64.b64encode(hashlib.sha256(scripts[0].encode("utf-8")).digest()).decode()
+    assert f"script-src 'sha256-{digest}'" in csp
+    assert "script-src 'unsafe-inline'" not in csp
+    # Required for the manifest link and for registering the worker.
+    assert "manifest-src 'self'" in csp
+    assert "worker-src 'self'" in csp
+    assert csp.startswith("default-src 'none'")
+
+
+def test_download_page_escapes_manifest_strings(releases_client):
+    client, releases = releases_client
+    hostile = dict(
+        MANIFEST,
+        notes=['<script>alert(1)</script>', 'plain & "quoted"'],
+        signed_with='<img src=x onerror=alert(1)>',
+        channel='preview" onmouseover="alert(1)',
+    )
+    _publish(releases, hostile)
+
+    body = client.get("/download").text
+
+    assert "<script>alert(1)</script>" not in body
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in body
+    assert "<img src=x onerror=alert(1)>" not in body
+    assert "&lt;img src=x onerror=alert(1)&gt;" in body
+    # The badge class is sanitised, so it cannot carry an event handler.
+    assert 'onmouseover="alert(1)"' not in body
+    assert 'class="badge badge-previewonmouseoveralert1"' in body
 
 
 # — The file ————————————————————————————————————————————————————————

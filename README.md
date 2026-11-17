@@ -15,8 +15,9 @@ A Mobile Legends: Bang Bang analytics platform — Flutter (Dart) app (Android +
 - **Recorded history** — daily snapshots the backend itself observes, served from the database.
 - **Esports** — MPL Indonesia / Philippines / Malaysia / Cambodia standings, schedules and match details.
 - **Player tracking** — connect **your own** account with a one-time code from your in-game mailbox; real profile, stats (wins, win rate, avg score, MVP count, win streak), match history with K/D/A and W/L, and top heroes. Live-polling every 60 s.
-- **Web app** — the Flutter web build is served by the API from a single origin: one URL, no CORS setup. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
-- **Download page** — `/download` serves a real Android APK with version, size, SHA-256 and install steps (`.\scripts\package_apk.ps1` publishes it). Honest "no build published yet" state until one exists.
+- **Web app** - the Flutter web build is served by the API from a single origin: one URL, no CORS setup. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+- **Installable + offline (PWA)** - a real manifest, generated icons and a service worker: install it from the browser (own window, home-screen icon) and the app shell still launches with no connection. API calls are never cached, so offline you get honest error states, not stale numbers.
+- **Download page** - `/download` serves a real Android APK with version, size, SHA-256 and install steps (`.\scripts\package_apk.ps1` publishes it), plus an "Install the web app" card. Honest "no build published yet" state until an APK exists.
 - **Original UI** — dark-first "Competitive Minimalism" design system, 5-tab navigation, saved heroes, theming.
 
 ## Repository layout
@@ -39,8 +40,9 @@ mlbb-tracker/
 .\scripts\run_web.ps1            # builds if needed, then serves on :8000
 ```
 
-Open **http://127.0.0.1:8000/** — API docs at `/docs`, Android download at
-`/download`.
+Open **http://127.0.0.1:8000/** — API docs at `/docs`, Android download and
+web-app installation at `/download`. In Chrome, the address bar's install icon
+(or that page's install card) adds the app to your desktop or home screen.
 
 ### Backend only
 

@@ -55,9 +55,14 @@ fabricated.
 
 ### `GET /download` (HTML, outside `/api/v1`)
 Server-rendered landing page for the Android build: version, size, SHA-256,
-release notes, install steps, and a link to the web app. It is plain HTML (no
-JavaScript, no Flutter canvas), so it loads instantly and is indexable. When no
-release is published it says so and offers the web app instead.
+release notes, install steps, and an "Install the web app" card. It is plain
+server-rendered HTML (no Flutter canvas), so it loads instantly and is
+indexable; the only script is a small install helper whose SHA-256 is pinned in
+the page's `Content-Security-Policy`. When no release is published it says so
+and offers the web app instead.
+
+The PWA assets are served from the web build root: `/manifest.json`, `/sw.js`,
+`/icons/*`, `/apple-touch-icon.png` and `/canvaskit/*` (bundled renderer).
 
 ### `GET /downloads/<filename>` (outside `/api/v1`)
 Serves the APK with `Content-Type: application/vnd.android.package-archive`

@@ -40,6 +40,45 @@ versions use Semantic Versioning.
   exposes them. The app shows a clear explanation and never fabricates data.
 - MLBB Tracker is unofficial and not affiliated with Moonton.
 
+## [0.9.0] — 2026-11-16
+
+### Added — installable web app (PWA)
+- **Real web app manifest** (`mobile/web/manifest.json`): app name, `/` start
+  URL and scope, standalone display, theme/background `#111318`, 192/512 icons
+  in both `any` and `maskable` variants, and shortcuts to Heroes, Esports and
+  Leaderboards.
+- **Generated icon set** (`scripts/generate_web_icons.py`, Pillow): the
+  analytics mark on the accent gradient — 192/512 + maskable, a 180 px Apple
+  touch icon and a 64 px favicon. No Flutter defaults left.
+- **Service worker** (`mobile/web/sw.js`): precaches the app shell and
+  CanvasKit, network-first navigations with a cached-shell fallback,
+  stale-while-revalidate for static assets, cache-first `/canvaskit/`, and
+  versioned caches cleaned on activate. **API and release routes are never
+  cached** — offline the app shows its honest error states instead of stale
+  numbers.
+- **Offline-capable build**: `--no-web-resources-cdn` bundles CanvasKit, so
+  the renderer no longer depends on gstatic. `scripts/run_web.ps1` uses it.
+- **Custom bootstrap** (`mobile/web/flutter_bootstrap.js`) that does not load
+  Flutter's deprecated service worker — it would replace ours on the same
+  scope and then unregister itself.
+- **`/download` → "Install the web app"**: an install button driven by
+  `beforeinstallprompt`, manual instructions for Chrome/Edge, Chrome Android
+  and Safari iOS, and an "installed" state under `display-mode: standalone`.
+- **CSP hardened, not loosened**: the page's single inline script is pinned by
+  SHA-256 (no `script-src 'unsafe-inline'`), with `manifest-src`/`worker-src`
+  allowed for the manifest and worker, and `img-src 'self' data:` for icons.
+- **HTML escaping** of every manifest-derived string on `/download` (version,
+  notes, checksum, signing note, channel) plus a sanitised badge class.
+- App version `0.9.0+9`; APK republished as **0.9.0+9, 51.3 MB, Android 7.0+
+  (API 24)**, debug-signed and still labelled preview.
+- Tests: **69 backend** (9 new: install card, CSP hash, escaping, manifest,
+  icons, worker guards), 6 widget tests.
+
+### Fixed
+- Service-worker cache lookups now ignore `Vary`: responses carry
+  `Vary: Origin` from the CORS middleware, which made module-script requests
+  miss the cache and fail offline.
+
 ## [0.8.0] — 2026-11-16
 
 ### Added — download page & APK release pipeline

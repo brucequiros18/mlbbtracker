@@ -14,6 +14,9 @@ published the page says so honestly instead of showing a broken link.
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import html
 import json
 import re
 from pathlib import Path
@@ -24,6 +27,85 @@ MANIFEST_NAME = "latest.json"
 _APK_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]*\.apk$")
 
 _REQUIRED_KEYS = ("version", "file", "size_bytes", "sha256")
+
+# The only script on /download: service-worker registration + the browser's
+# install prompt. Kept as a constant so its SHA-256 can be pinned in the CSP
+# instead of allowing 'unsafe-inline'.
+INSTALL_SCRIPT = """(function () {
+  var standalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    navigator.standalone === true;
+
+  var button = document.getElementById('install-button');
+  var status = document.getElementById('install-status');
+  var hint = document.getElementById('install-hint');
+  if (!button || !status) return;
+
+  function installed() {
+    button.hidden = true;
+    if (hint) hint.hidden = true;
+    status.textContent =
+      'Installed - open MLBB Tracker from your home screen or app list.';
+    status.hidden = false;
+  }
+
+  if (standalone) { installed(); return; }
+
+  // Registering the worker makes this page installable on a first visit too.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  }
+
+  var prompt = null;
+  window.addEventListener('beforeinstallprompt', function (event) {
+    event.preventDefault();
+    prompt = event;
+    button.hidden = false;
+    status.hidden = true;
+  });
+
+  button.addEventListener('click', function () {
+    if (!prompt) return;
+    var current = prompt;
+    prompt = null;
+    button.hidden = true;
+    current.prompt();
+    current.userChoice.then(function (choice) {
+      if (choice.outcome === 'accepted') {
+        status.textContent = 'Installing...';
+        status.hidden = false;
+      } else {
+        status.textContent =
+          'Install cancelled - you can install any time from your browser menu.';
+        status.hidden = false;
+      }
+    });
+  });
+
+  window.addEventListener('appinstalled', installed);
+})();"""
+
+
+def _script_hash(source: str) -> str:
+    digest = hashlib.sha256(source.encode("utf-8")).digest()
+    return base64.b64encode(digest).decode("ascii")
+
+
+# /download is intentionally script-light: one inline script, pinned by hash,
+# plus the manifest and the service worker it registers.
+DOWNLOAD_CSP = (
+    "default-src 'none'; "
+    f"script-src 'sha256-{_script_hash(INSTALL_SCRIPT)}'; "
+    "style-src 'unsafe-inline'; img-src 'self' data:; "
+    "manifest-src 'self'; worker-src 'self'; "
+    "base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+)
+
+
+def _esc(value: object) -> str:
+    """Escape any manifest-derived value before putting it in the page."""
+    return html.escape(str(value), quote=True)
+
 
 
 def read_manifest(releases_dir: Path) -> dict | None:
@@ -80,21 +162,26 @@ def _fmt_sha(sha: str) -> tuple[str, str]:
 
 
 def render_download_page(manifest: dict | None) -> str:
-    """The /download HTML page. No JavaScript; styles are inline."""
+    """The /download HTML page. One inline script, pinned by CSP hash."""
     published = manifest is not None
-    version = str(manifest.get("version", "")) if published else ""
-    file_name = str(manifest.get("file", "")) if published else ""
+    version = _esc(manifest.get("version", "")) if published else ""
+    file_name = _esc(manifest.get("file", "")) if published else ""
     size = _fmt_size(manifest.get("size_bytes")) if published else "—"
-    sha_short, sha_full = _fmt_sha(manifest.get("sha256", "")) if published else ("", "")
-    released = str(manifest.get("released_at", "")) if published else ""
-    min_android = str(manifest.get("min_android", "")) if published else ""
-    signed = str(manifest.get("signed_with", "")) if published else ""
-    channel = str(manifest.get("channel", "release")) if published else ""
-    notes = list(manifest.get("notes") or []) if published else []
+    if published:
+        sha_short_raw, sha_full_raw = _fmt_sha(manifest.get("sha256", ""))
+        sha_short, sha_full = _esc(sha_short_raw), _esc(sha_full_raw)
+    else:
+        sha_short = sha_full = ""
+    released = _esc(manifest.get("released_at", "")) if published else ""
+    min_android = _esc(manifest.get("min_android", "")) if published else ""
+    signed = _esc(manifest.get("signed_with", "")) if published else ""
+    channel = _esc(manifest.get("channel", "release")) if published else ""
+    channel_class = re.sub(r"[^a-z0-9-]", "", str(manifest.get("channel", "")) if published else "")
+    notes = [_esc(note) for note in (manifest.get("notes") or [])] if published else []
 
     channel_badge = (
-        f'<span class="badge badge-{channel}">{channel}</span>'
-        if published and channel and channel != "release"
+        f'<span class="badge badge-{channel_class}">{channel}</span>'
+        if published and channel_class and channel != "release"
         else ""
     )
 
@@ -152,6 +239,10 @@ def render_download_page(manifest: dict | None) -> str:
       </div>
     """
 
+    # The JS contains braces, so it is interpolated as a prebuilt string
+    # rather than inlined into this f-string.
+    install_script = f"<script>{INSTALL_SCRIPT}</script>"
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -159,6 +250,12 @@ def render_download_page(manifest: dict | None) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
 <meta name="description" content="Download MLBB Tracker for Android — live Mobile Legends meta analytics, recorded history and esports standings. Unofficial fan project.">
+<meta name="theme-color" content="#111318">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MLBB Tracker">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
 <title>Download MLBB Tracker</title>
 <style>
   :root {{
@@ -211,6 +308,7 @@ def render_download_page(manifest: dict | None) -> str:
     display: inline-flex; align-items: center; gap: 8px;
     padding: 12px 22px; border-radius: 12px; text-decoration: none;
     font-weight: 600; font-size: 15px; transition: transform .15s ease, opacity .15s ease;
+    border: 0; cursor: pointer; font-family: inherit;
   }}
   .btn:hover {{ transform: translateY(-1px); }}
   .btn:active {{ transform: translateY(0); }}
@@ -240,7 +338,14 @@ def render_download_page(manifest: dict | None) -> str:
   .steps li {{ margin-bottom: 10px; }}
   .steps b {{ color: var(--text); }}
   h2 {{ font-size: 17px; margin: 0 0 4px; letter-spacing: -0.01em; }}
-  .webapp p {{ color: var(--text-2); margin: 8px 0 18px; }}
+  .install p {{ color: var(--text-2); margin: 8px 0 16px; }}
+  .install .status {{ color: var(--ok); font-size: 14px; margin: 0 0 14px; }}
+  .install-help {{ margin: 18px 0 16px; padding-top: 16px; border-top: 1px solid var(--border); }}
+  .install-help p {{ margin: 0 0 8px; }}
+  .install-help ul {{ margin: 0; padding-left: 20px; color: var(--text-2); font-size: 14px; }}
+  .install-help li {{ margin-bottom: 6px; }}
+  .install-help b {{ color: var(--text); }}
+  [hidden] {{ display: none !important; }}
   footer {{
     text-align: center; color: var(--muted); font-size: 13px;
     margin-top: 36px; line-height: 1.7;
@@ -272,14 +377,28 @@ def render_download_page(manifest: dict | None) -> str:
       <li><b>Tap Install</b>, then open MLBB Tracker from your home screen.</li>
     </ol>
   </section>
-  <section class="card webapp">
-    <h2>Prefer not to install anything?</h2>
+  <section class="card install">
+    <h2>Install the web app</h2>
     <p>
-      The web app is the same codebase, served from this site: rankings,
-      hero pages, esports standings and the full player connect flow. It can
-      also be installed to your home screen from your browser menu.
+      The same app runs in your browser — no APK, no store, no update step.
+      Installed, it opens in its own window and keeps its shell cached, so it
+      still launches offline; live data needs a connection.
     </p>
-    <a class="btn btn-ghost" href="/">Open the web app</a>
+    <p class="status" id="install-status" role="status" hidden></p>
+    <button class="btn btn-primary" id="install-button" type="button" hidden>
+      Install the web app
+    </button>
+    <div class="install-help" id="install-hint">
+      <p class="muted small">No install button? Add it from your browser menu:</p>
+      <ul>
+        <li><b>Chrome or Edge (desktop):</b> the install icon in the address bar, or menu &rarr; <b>Install page as app</b>.</li>
+        <li><b>Chrome (Android):</b> menu &rarr; <b>Add to Home screen</b> &rarr; <b>Install</b>.</li>
+        <li><b>Safari (iOS):</b> Share &rarr; <b>Add to Home Screen</b>.</li>
+      </ul>
+    </div>
+    <div class="cta-row">
+      <a class="btn btn-ghost" href="/">Open the web app</a>
+    </div>
   </section>
   <footer>
     Data: Rone Arena community API &middot; MLBBDex (CC BY-SA).<br>
@@ -287,6 +406,7 @@ def render_download_page(manifest: dict | None) -> str:
     <a href="/">Web app</a> &middot; <a href="/docs">API docs</a>
   </footer>
 </main>
+{install_script}
 </body>
 </html>
 """
