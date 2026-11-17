@@ -1,5 +1,5 @@
 /*
- * MLBB Tracker — service worker.
+ * MLBB Tracker â€” service worker.
  *
  * Makes the web app installable and usable offline:
  *   - the app shell (HTML, bootstrap, main.dart.js, icons) is precached;
@@ -12,13 +12,13 @@
  * API calls are NEVER cached: stale numbers presented as live would be
  * fabricated data. Offline, the app shows its own honest error states.
  *
- * Bump CACHE_VERSION on every release — the activate handler deletes caches
+ * Bump CACHE_VERSION on every release â€” the activate handler deletes caches
  * from previous versions.
  */
 
 'use strict';
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const SHELL_CACHE = `mlbb-shell-${CACHE_VERSION}`;
 const STATIC_CACHE = `mlbb-static-${CACHE_VERSION}`;
 

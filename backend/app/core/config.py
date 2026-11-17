@@ -58,6 +58,16 @@ class Settings(BaseSettings):
     # /download and /downloads/<file>. Empty = auto-detect `<repo>/releases`.
     releases_dir: str = ""
 
+    # Google sign-in - the app's only credential. The value is the OAuth 2.0
+    # *web* client ID from Google Cloud Console; it is public (it ships to the
+    # browser), so the API exposes it via GET /api/v1/auth/config.
+    # Empty = not configured: sign-in answers 503 GOOGLE_NOT_CONFIGURED and the
+    # app shows that state instead of a button that cannot work.
+    google_client_id: str = ""
+
+    # How long an app account session stays valid (sliding, refreshed on use).
+    user_session_ttl_days: int = 30
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, value: Any) -> Any:

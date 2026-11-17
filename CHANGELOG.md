@@ -40,6 +40,50 @@ versions use Semantic Versioning.
   exposes them. The app shows a clear explanation and never fabricates data.
 - MLBB Tracker is unofficial and not affiliated with Moonton.
 
+## [0.10.0] — 2026-11-17
+
+### Added — Google-only accounts
+- **Google is the only way to register or sign in.** There is no password
+  login, no email login and no anonymous account. The Players tab walks
+  through three steps, each shown only when the previous one is done: Google
+  sign-in, profile setup, then the consented in-game connect flow.
+- **`POST /api/v1/auth/google`** takes the ID token from Google Identity
+  Services and verifies it **locally**: RS256 signature against Google's JWKS
+  (cached, refetched on key rotation), issuer, audience (our own client ID),
+  expiry and `email_verified`. The stable `sub` claim is the account key; the
+  token itself is never stored. JWKS outages are a `503`, not a fake success.
+- **Profile setup** (`POST /api/v1/auth/register`) collects the username, the
+  MLBB ID and an **app password**. The username is unique, case-insensitive.
+  The MLBB ID is **self-declared**: it is stored as typed, never checked
+  against Moonton, and every response says `mlbbIdVerified: false`. The app
+  password is app-only — a salted **scrypt** hash, never sent to Moonton and
+  never used to sign in; it only confirms profile edits.
+- **Sessions** (`GET/PATCH /api/v1/auth/me`, `POST /api/v1/auth/logout`):
+  opaque bearer tokens, only their SHA-256 digest stored, 30-day sliding
+  expiry, one row per sign-in. An expired or revoked token signs the app out
+  instead of showing a profile it can no longer prove.
+- **Honest configuration state**: `GET /api/v1/auth/config` reports whether
+  Google sign-in is configured. With no `MLBB_GOOGLE_CLIENT_ID` the app shows
+  "Google sign-in is not configured" and the API answers `503
+  GOOGLE_NOT_CONFIGURED` — it never offers a button that cannot work.
+- **Web** renders the official Google Identity Services button (GIS only
+  permits sign-in from UI it draws itself); **Android** uses the native
+  account picker. Either way the backend is the only place the token is
+  verified.
+- New tables `users` and `user_sessions` (Alembic revision `9c1a7f42b6d8`;
+  `Base.metadata.create_all` also adds them to an existing dev database at
+  startup).
+- App version `0.10.0+10`.
+- Tests: **105 backend** (36 new: sign-in, registration, sessions, profile
+  edits, password hashing, and the real verifier against a local RSA key),
+  **12 widget tests** (6 new: sign-in, profile setup, validation, sign-out).
+
+### Changed
+- The Players tab is gated on an app account; signing out also disconnects the
+  game link, so statistics are no longer visible on that device.
+- The connect step now states that the MLBB Tracker profile is not linked to
+  Moonton and that the provider token stays on the backend.
+
 ## [0.9.0] — 2026-11-16
 
 ### Added — installable web app (PWA)

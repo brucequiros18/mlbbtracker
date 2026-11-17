@@ -10,7 +10,7 @@ before the next begins.
 | 1 | Research & architecture | ✅ Complete |
 | 2 | Flutter foundation (theme, nav, Home, Player Search) | ✅ Complete |
 | 3 | Backend foundation (FastAPI, provider abstraction, health) | ✅ Complete |
-| 4 | Player integration | ✅ **Consented sign-in**: in-game code → real profile/stats/matches/top heroes |
+| 4 | Player integration | ✅ **Consented sign-in**: in-game code → real profile/stats/matches/top heroes. **Google-only app accounts** (0.10.0) gate the flow |
 | 5 | Advanced analytics (rankings, hero detail, charts) | 🟡 Rankings + trend chart + **recorded history (DB snapshots, Alembic)** done; hero-comparison pending |
 | 6 | Additional features (heroes DB, esports, favourites, comparison) | 🟡 Heroes + favourites + **esports standings** done; comparison pending |
 | 7 | QA (automated tests, device testing, perf, security) | 🟡 Automated tests green; device pass pending |
@@ -36,11 +36,12 @@ and every provider call is logged to `provider_health` (visible at
   `/heroes/rankings`, `/heroes/{id}`, `/heroes/{id}/trends`,
   `/heroes/{id}/history`, `/health`, `/health/providers`,
   `/health/history`, `/players/...` (consented connect flow + `/players/me/*`),
+  `/auth/*` (Google-only sign-in, registration, sessions, profile),
   typed error envelope, CORS, security headers, OpenAPI, single-origin web
   serving.
 - **Ops**: `scripts/record_snapshot.py` + `scripts/install_snapshot_task.ps1`
   (daily idempotent snapshot), `scripts/run_web.ps1`.
-- **Tests**: 47 backend tests (offline) + 6 widget tests; live smoke script.
+- **Tests**: 105 backend tests (offline) + 12 widget tests; live smoke script.
 
 **Download page: ✅ complete (0.8.0).** `/download` serves a real APK with
 version, size, SHA-256, notes and install steps; `scripts/package_apk.ps1`
@@ -52,6 +53,15 @@ and a service worker make the web build installable from the browser and
 usable offline: the shell and CanvasKit are precached, navigations fall back to
 the cached shell, and API responses are never cached (offline shows honest
 error states). Install is offered on `/download` and via the address bar.
+
+**Google-only accounts: ✅ complete (0.10.0).** Sign-up and sign-in are Google
+only — there is no password login and no anonymous account. The Google ID token
+is verified locally on the backend (JWKS/RS256, issuer, audience, expiry,
+`email_verified`), then the player chooses a username, enters their MLBB ID
+(self-declared, never verified) and an app password (salted scrypt, app-only,
+never a login method). Sessions are opaque bearer tokens stored only as
+SHA-256 digests. Unconfigured servers say so instead of showing a dead button.
+Real end-to-end sign-in still needs an OAuth client ID.
 
 ## Next steps
 

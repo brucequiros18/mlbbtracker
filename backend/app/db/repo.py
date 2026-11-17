@@ -6,10 +6,17 @@ import datetime as dt
 import hashlib
 from collections.abc import Callable, Sequence
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.db.models import ApiCacheEntry, HeroSnapshot, PlayerSession, ProviderHealthEvent
+from app.db.models import (
+    ApiCacheEntry,
+    HeroSnapshot,
+    PlayerSession,
+    ProviderHealthEvent,
+    User,
+    UserSession,
+)
 from app.integrations.models import RankingEntry
 
 
@@ -234,6 +241,196 @@ def delete_session(session_factory: Callable[[], Session], session_key: str) -> 
             select(PlayerSession).where(
                 PlayerSession.session_hash == hash_session_key(session_key)
             )
+        )
+        if row is not None:
+            session.delete(row)
+            session.commit()
+
+
+# -- App accounts (Google sign-in) -------------------------------------------
+
+
+def _as_utc(value: dt.datetime) -> dt.datetime:
+    """SQLite hands back naive datetimes; treat them as UTC."""
+    return value if value.tzinfo is not None else value.replace(tzinfo=dt.timezone.utc)
+
+
+def find_user_by_id(session_factory: Callable[[], Session], user_id: int) -> User | None:
+    with session_factory() as session:
+        return session.get(User, user_id)
+
+
+def find_user_by_google_sub(
+    session_factory: Callable[[], Session], google_sub: str
+) -> User | None:
+    with session_factory() as session:
+        return session.scalar(select(User).where(User.google_sub == google_sub))
+
+
+def find_user_by_username(
+    session_factory: Callable[[], Session], username: str
+) -> User | None:
+    """Case-insensitive lookup: `Ash` and `ash` are the same name."""
+    with session_factory() as session:
+        return session.scalar(
+            select(User).where(func.lower(User.username) == username.lower())
+        )
+
+
+def upsert_google_user(
+    session_factory: Callable[[], Session],
+    *,
+    google_sub: str,
+    email: str,
+    email_verified: bool,
+    google_name: str | None,
+    picture_url: str | None,
+) -> tuple[User, bool]:
+    """Create or refresh the account behind a verified Google identity.
+
+    Returns ``(user, created)``. The Google subject is the identity key; the
+    profile fields chosen by the player are never overwritten here.
+    """
+    now = dt.datetime.now(dt.timezone.utc)
+    with session_factory() as session:
+        user = session.scalar(select(User).where(User.google_sub == google_sub))
+        if user is None:
+            user = User(
+                google_sub=google_sub,
+                email=email,
+                email_verified=email_verified,
+                google_name=google_name,
+                picture_url=picture_url,
+                created_at=now,
+                updated_at=now,
+                last_login_at=now,
+            )
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+            return user, True
+
+        user.email = email
+        user.email_verified = email_verified
+        user.google_name = google_name or user.google_name
+        user.picture_url = picture_url or user.picture_url
+        user.last_login_at = now
+        user.updated_at = now
+        session.commit()
+        return user, False
+
+
+def set_user_profile(
+    session_factory: Callable[[], Session],
+    user_id: int,
+    *,
+    username: str,
+    mlbb_id: str,
+    password_hash: str,
+) -> User:
+    """Complete (or replace) the app-only profile of a signed-in account."""
+    with session_factory() as session:
+        user = session.get(User, user_id)
+        if user is None:  # pragma: no cover - caller resolved the session
+            raise LookupError("User not found")
+        user.username = username
+        user.mlbb_id = mlbb_id
+        user.password_hash = password_hash
+        user.updated_at = dt.datetime.now(dt.timezone.utc)
+        session.commit()
+        return user
+
+
+def update_user_profile(
+    session_factory: Callable[[], Session],
+    user_id: int,
+    *,
+    username: str | None = None,
+    mlbb_id: str | None = None,
+    password_hash: str | None = None,
+) -> User:
+    with session_factory() as session:
+        user = session.get(User, user_id)
+        if user is None:  # pragma: no cover - caller resolved the session
+            raise LookupError("User not found")
+        if username is not None:
+            user.username = username
+        if mlbb_id is not None:
+            user.mlbb_id = mlbb_id
+        if password_hash is not None:
+            user.password_hash = password_hash
+        user.updated_at = dt.datetime.now(dt.timezone.utc)
+        session.commit()
+        return user
+
+
+def create_user_session(
+    session_factory: Callable[[], Session],
+    *,
+    token_hash: str,
+    user_id: int,
+    ttl: dt.timedelta,
+) -> None:
+    now = dt.datetime.now(dt.timezone.utc)
+    with session_factory() as session:
+        session.add(
+            UserSession(
+                token_hash=token_hash,
+                user_id=user_id,
+                created_at=now,
+                expires_at=now + ttl,
+                last_seen_at=now,
+            )
+        )
+        session.commit()
+
+
+def find_user_session(
+    session_factory: Callable[[], Session], token_hash: str
+) -> UserSession | None:
+    """The session for a token digest, or None if unknown or expired."""
+    now = dt.datetime.now(dt.timezone.utc)
+    with session_factory() as session:
+        row = session.scalar(
+            select(UserSession).where(UserSession.token_hash == token_hash)
+        )
+        if row is None:
+            return None
+        if _as_utc(row.expires_at) <= now:
+            session.delete(row)
+            session.commit()
+            return None
+        return row
+
+
+def touch_user_session(
+    session_factory: Callable[[], Session],
+    *,
+    token_hash: str,
+    ttl: dt.timedelta,
+    min_interval: dt.timedelta = dt.timedelta(hours=1),
+) -> None:
+    """Slide the session expiry, at most once per ``min_interval``."""
+    now = dt.datetime.now(dt.timezone.utc)
+    with session_factory() as session:
+        row = session.scalar(
+            select(UserSession).where(UserSession.token_hash == token_hash)
+        )
+        if row is None:
+            return
+        if now - _as_utc(row.last_seen_at) < min_interval:
+            return
+        row.last_seen_at = now
+        row.expires_at = now + ttl
+        session.commit()
+
+
+def delete_user_session(
+    session_factory: Callable[[], Session], token_hash: str
+) -> None:
+    with session_factory() as session:
+        row = session.scalar(
+            select(UserSession).where(UserSession.token_hash == token_hash)
         )
         if row is not None:
             session.delete(row)

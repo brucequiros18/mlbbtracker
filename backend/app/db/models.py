@@ -9,7 +9,18 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, Float, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -67,6 +78,77 @@ class PlayerSession(Base):
     )
 
 
+
+
+class User(Base):
+    """An app account, created by signing in with Google.
+
+    Google is the only credential. ``google_sub`` is the stable subject of a
+    verified Google ID token, so it is the identity key - never the email.
+
+    ``username``, ``mlbb_id`` and ``password_hash`` are app-only profile data:
+
+    * the MLBB ID is **self-declared and never verified** against Moonton;
+    * the password is a salted scrypt hash that never leaves this database. It
+      is not a sign-in method and is never sent to Moonton - it only confirms
+      changes to the profile (see ``PATCH /api/v1/auth/me``).
+    """
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    google_sub: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True, nullable=False
+    )
+    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    email_verified: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    google_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    picture_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Chosen by the player after the Google sign-in. NULL until then, which is
+    # how the app knows the profile still has to be completed.
+    username: Mapped[str | None] = mapped_column(
+        String(24), unique=True, index=True, nullable=True
+    )
+    mlbb_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    last_login_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class UserSession(Base):
+    """A signed-in app session (Google-authenticated).
+
+    The app holds an opaque bearer token; only its SHA-256 hash is stored here,
+    mirroring the consented player-session pattern.
+    """
+
+    __tablename__ = "user_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    token_hash: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True, nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
 
 
 class ApiCacheEntry(Base):

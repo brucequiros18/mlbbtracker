@@ -12,35 +12,60 @@ import '../../../shared/widgets/app_card.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/state_views.dart';
+import '../../auth/domain/account.dart';
+import '../../auth/presentation/account_card.dart';
+import '../../auth/presentation/auth_providers.dart';
+import '../../auth/presentation/profile_setup_view.dart';
+import '../../auth/presentation/sign_in_view.dart';
 import '../domain/player.dart';
 import 'player_providers.dart';
 
 /// Players tab.
 ///
-/// Shows the **consented connect flow**: the player signs in as themselves
-/// with a one-time code delivered to their in-game mailbox. Once connected,
-/// the screen renders the player's real statistics, matches and top heroes.
+/// Three steps, each shown only when the previous one is done:
+///
+/// 1. **Sign in with Google** - the only credential the app accepts.
+/// 2. **Profile** - username, self-declared MLBB ID and an app password.
+/// 3. **Connect the game account** - the consented one-time code from the
+///    in-game mailbox; only this loads real statistics.
 class PlayerSearchScreen extends ConsumerWidget {
   const PlayerSearchScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final token = ref.watch(sessionTokenProvider);
+    final account = ref.watch(currentAccountProvider);
+    final playerToken = ref.watch(sessionTokenProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Players'),
         actions: [
-          if (token != null)
+          if (playerToken != null)
             IconButton(
-              tooltip: 'Disconnect account',
-              icon: const Icon(Icons.logout_rounded),
+              tooltip: 'Disconnect MLBB account',
+              icon: const Icon(Icons.link_off_rounded),
               onPressed: () => _confirmDisconnect(context, ref),
+            ),
+          if (account.valueOrNull != null)
+            IconButton(
+              tooltip: 'Sign out',
+              icon: const Icon(Icons.logout_rounded),
+              onPressed: () => _confirmSignOut(context, ref),
             ),
         ],
       ),
-      body: token == null
-          ? const _ConnectView()
-          : const _ConnectedDashboard(),
+      body: account.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => ErrorView(
+          message: describeError(error),
+          onRetry: () => ref.invalidate(currentAccountProvider),
+        ),
+        data: (acc) {
+          if (acc == null) return const SignInView();
+          if (!acc.profileComplete) return ProfileSetupView(account: acc);
+          return _SignedInBody(account: acc);
+        },
+      ),
     );
   }
 
@@ -48,7 +73,7 @@ class PlayerSearchScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Disconnect account?'),
+        title: const Text('Disconnect MLBB account?'),
         content: const Text(
           'Your statistics will be removed from this device and the backend '
           'will forget the session. You can reconnect at any time.',
@@ -62,6 +87,51 @@ class PlayerSearchScreen extends ConsumerWidget {
     if (confirmed == true) {
       await ref.read(connectControllerProvider.notifier).disconnect();
     }
+  }
+
+  Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text(
+          'Your MLBB Tracker profile stays on the server. Signing out also '
+          'disconnects the game account on this device, so the statistics are '
+          'no longer visible.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sign out')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (ref.read(sessionTokenProvider) != null) {
+      await ref.read(connectControllerProvider.notifier).disconnect();
+    }
+    await ref.read(authControllerProvider.notifier).signOut();
+  }
+}
+
+/// Signed in with a complete profile: the account card, then either the
+/// connect flow or the connected dashboard.
+class _SignedInBody extends ConsumerWidget {
+  const _SignedInBody({required this.account});
+
+  final Account account;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final playerToken = ref.watch(sessionTokenProvider);
+    if (playerToken != null) return _ConnectedDashboard(account: account);
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.gutter),
+      children: [
+        AccountCard(account: account),
+        const SizedBox(height: AppSpacing.lg),
+        const _ConnectView(),
+      ],
+    );
   }
 }
 
@@ -127,10 +197,10 @@ class _ConnectViewState extends ConsumerState<_ConnectView> {
     final codeSent = state is ConnectCodeSent;
     final busy = state is ConnectSendingCode || state is ConnectVerifying;
 
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.gutter),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Connect your account', style: Theme.of(context).textTheme.titleLarge),
+        Text('Connect your game account', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppSpacing.xs),
         Text(
           'Real match history, KDA and win rates — read directly from your own account.',
@@ -155,8 +225,9 @@ class _ConnectViewState extends ConsumerState<_ConnectView> {
               _Step(number: '3', text: 'Enter the code here. The backend reads your stats for you.'),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'No password is ever requested. Your account token is stored on the '
-                'backend, never in the app.',
+                'We never ask for your Moonton password. The code proves you own '
+                'the account, and the provider token stays on the backend, never '
+                'in the app. Your MLBB Tracker profile is not linked to Moonton.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: palette.textMuted),
               ),
             ],
@@ -257,7 +328,9 @@ class _Step extends StatelessWidget {
 
 // — Connected dashboard ——————————————————————————————————————
 class _ConnectedDashboard extends ConsumerStatefulWidget {
-  const _ConnectedDashboard();
+  const _ConnectedDashboard({required this.account});
+
+  final Account account;
 
   @override
   ConsumerState<_ConnectedDashboard> createState() => _ConnectedDashboardState();
@@ -313,6 +386,8 @@ class _ConnectedDashboardState extends ConsumerState<_ConnectedDashboard> {
       child: ListView(
         padding: const EdgeInsets.all(AppSpacing.gutter),
         children: [
+          AccountCard(account: widget.account),
+          const SizedBox(height: AppSpacing.lg),
           profile.when(
             loading: () => const AppCard(
               child: SizedBox(height: 96, child: Center(child: CircularProgressIndicator())),

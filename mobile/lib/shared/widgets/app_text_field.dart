@@ -15,6 +15,7 @@ class AppTextField extends StatelessWidget {
     this.error,
     this.digitsOnly = false,
     this.maxLength,
+    this.obscureText = false,
   });
 
   final String label;
@@ -28,6 +29,9 @@ class AppTextField extends StatelessWidget {
   final bool digitsOnly;
   final int? maxLength;
 
+  /// Hides the text (passwords). Also disables autocorrect and suggestions.
+  final bool obscureText;
+
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -37,6 +41,9 @@ class AppTextField extends StatelessWidget {
       onSubmitted: onSubmitted,
       inputFormatters: digitsOnly ? [FilteringTextInputFormatter.digitsOnly] : null,
       maxLength: maxLength,
+      obscureText: obscureText,
+      autocorrect: !obscureText,
+      enableSuggestions: !obscureText,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,

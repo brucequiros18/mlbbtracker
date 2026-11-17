@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import app_release, esports, health, heroes, players
+from app.api.v1.endpoints import app_release, auth, esports, health, heroes, players
 
 api_router = APIRouter()
+api_router.include_router(auth.router)
 api_router.include_router(health.router)
 api_router.include_router(heroes.router)
 api_router.include_router(players.router)

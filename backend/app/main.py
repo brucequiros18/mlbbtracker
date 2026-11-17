@@ -22,7 +22,8 @@ from app.core.config import get_settings
 from app.core.errors import AppError
 from app.core.health_log import set_health_sink
 from app.core.logging import configure_logging, get_logger
-from app.db.base import get_session_factory
+from app.db import models as _models  # noqa: F401  (register ORM models)
+from app.db.base import Base, get_engine, get_session_factory
 from app.db.repo import record_provider_health
 from app.integrations.provider_factory import get_providers
 from app.services.release_service import (
@@ -63,6 +64,13 @@ async def lifespan(app: FastAPI):
     configure_logging()
     settings = get_settings()
     logger.info("starting %s v%s (%s)", settings.app_name, __version__, settings.environment)
+    # Create any missing tables. There are no Alembic revisions yet, so this is
+    # what adds new tables (users, user_sessions) to an existing database; it
+    # never alters or drops one.
+    try:
+        Base.metadata.create_all(get_engine())
+    except Exception as exc:  # pragma: no cover - depends on the deployment
+        logger.error("could not ensure database tables: %s", exc)
     set_health_sink(_health_sink)
     yield
     set_health_sink(None)

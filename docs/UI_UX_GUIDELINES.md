@@ -48,7 +48,7 @@ Contrast targets WCAG AA. Positive/negative are never the *only* signal
 ## Information architecture — 5 tabs
 
 1. **Home** — search entry, trending heroes (real win-rate leaders), explore, dev notice.
-2. **Players** — Player ID + Zone ID search, validation, recent searches, profile/unavailable states.
+2. **Players** — three gated steps: **Sign in with Google** (the only credential), then the profile (username, self-declared MLBB ID, app password), then the consented in-game connect flow. Connected: real profile, stats, matches and top heroes.
 3. **Heroes** — role-filtered grid → hero detail.
 4. **Ranks** — meta rankings with sort + window chips.
 5. **Saved** — favourited heroes + theme toggle.
@@ -57,6 +57,9 @@ Contrast targets WCAG AA. Positive/negative are never the *only* signal
 
 - Every list has loading, empty, error (with retry), and — for players — an
   explicit **"not available from public data"** state.
+- **Honest capability states**: if Google sign-in is not configured the app
+  says so instead of rendering a button that cannot work; the self-declared
+  MLBB ID always carries a visible "self-declared" badge.
 - Progressive disclosure: overview first, detail on demand.
 - Semantic labels on inputs; contrast-checked colors; large touch targets;
   layouts reflow for narrow screens.

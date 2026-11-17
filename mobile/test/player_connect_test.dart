@@ -1,90 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mlbb_tracker/features/players/domain/player.dart';
-import 'package:mlbb_tracker/features/players/domain/player_repository.dart';
+import 'package:mlbb_tracker/features/auth/domain/account.dart';
+import 'package:mlbb_tracker/features/auth/presentation/auth_providers.dart';
 import 'package:mlbb_tracker/features/players/presentation/player_providers.dart';
 import 'package:mlbb_tracker/features/players/presentation/player_search_screen.dart';
 import 'package:mlbb_tracker/shared/local/local_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _FakePlayerRepository implements PlayerRepository {
-  int startCalls = 0;
-  int verifyCalls = 0;
+import 'fakes.dart';
 
-  @override
-  Future<PlayerProfile> lookup({required String playerId, required String zoneId}) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<void> connectStart({required String playerId, required String zoneId}) async {
-    startCalls++;
-  }
-
-  @override
-  Future<ConnectResult> connectVerify({
-    required String playerId,
-    required String zoneId,
-    required String code,
-  }) async =>
-      ConnectResult(
-        sessionToken: 'session-abc',
-        player: PlayerProfile(playerId: playerId, zoneId: zoneId, ign: 'TestPlayer'),
-      );
-
-  @override
-  Future<void> disconnect(String sessionToken) async {}
-
-  @override
-  Future<PlayerProfile> profile(String sessionToken) async =>
-      const PlayerProfile(playerId: '123456789', zoneId: '1234', ign: 'TestPlayer', level: 42);
-
-  @override
-  Future<PlayerStats> stats(String sessionToken) async =>
-      const PlayerStats(totalMatches: 100, wins: 60, winRate: 0.6, mvpCount: 14, winStreak: 7);
-
-  @override
-  Future<PlayerMatchesPage> matches(String sessionToken, {int limit = 20, String? cursor}) async =>
-      const PlayerMatchesPage(
-        matches: [
-          PlayerMatch(
-            heroName: 'Masha',
-            kills: 8,
-            deaths: 2,
-            assists: 5,
-            kda: 6.5,
-            mvp: true,
-            won: true,
-            playedAt: null,
-          ),
-        ],
-      );
-
-  @override
-  Future<List<FrequentHero>> frequentHeroes(String sessionToken, {int limit = 10}) async =>
-      const [FrequentHero(heroName: 'Masha', totalMatches: 40, winRate: 0.65)];
-}
+const _completeAccount = Account(
+  id: 1,
+  email: 'ash@example.com',
+  googleName: 'Ash',
+  username: 'AshKetchum',
+  mlbbId: '123456789',
+  profileComplete: true,
+  mlbbIdVerified: false,
+);
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('connect view explains the consented sign-in flow', (tester) async {
+  Future<void> pumpPlayers(
+    WidgetTester tester, {
+    required FakePlayerRepository playerRepo,
+    required FakeAuthRepository authRepo,
+  }) async {
+    tester.view.physicalSize = const Size(1400, 2600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     final prefs = await SharedPreferences.getInstance();
-    final repo = _FakePlayerRepository();
-
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           localStoreProvider.overrideWithValue(LocalStore(prefs)),
-          playerRepositoryProvider.overrideWithValue(repo),
+          playerRepositoryProvider.overrideWithValue(playerRepo),
+          authRepositoryProvider.overrideWithValue(authRepo),
         ],
         child: const MaterialApp(home: PlayerSearchScreen()),
       ),
     );
+    await tester.pumpAndSettle();
+  }
 
-    expect(find.text('Connect your account'), findsOneWidget);
-    expect(find.text('No password is ever requested. Your account token is stored on the '
-        'backend, never in the app.'), findsOneWidget);
+  testWidgets('connect view explains the consented in-game sign-in', (tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('account_session_token', 'account-token');
+    final playerRepo = FakePlayerRepository();
+
+    await pumpPlayers(
+      tester,
+      playerRepo: playerRepo,
+      authRepo: FakeAuthRepository(account: _completeAccount),
+    );
+
+    expect(find.text('Connect your game account'), findsOneWidget);
+    expect(find.textContaining('We never ask for your Moonton password'), findsOneWidget);
 
     // Sending a code reveals the verification step.
     await tester.enterText(find.byType(TextField).at(0), '123456789');
@@ -92,28 +65,26 @@ void main() {
     await tester.tap(find.text('Send verification code'));
     await tester.pumpAndSettle();
 
-    expect(repo.startCalls, 1);
+    expect(playerRepo.startCalls, 1);
     expect(find.text('Verification code'), findsOneWidget);
   });
 
   testWidgets('connected dashboard renders real stats and matches', (tester) async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('account_session_token', 'account-token');
     await prefs.setString('player_session_token', 'session-abc');
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          localStoreProvider.overrideWithValue(LocalStore(prefs)),
-          playerRepositoryProvider.overrideWithValue(_FakePlayerRepository()),
-        ],
-        child: const MaterialApp(home: PlayerSearchScreen()),
-      ),
+    await pumpPlayers(
+      tester,
+      playerRepo: FakePlayerRepository(),
+      authRepo: FakeAuthRepository(account: _completeAccount),
     );
-    await tester.pumpAndSettle();
 
     expect(find.text('TestPlayer'), findsOneWidget);
     expect(find.text('60.0%'), findsOneWidget);
     expect(find.text('Masha'), findsWidgets);
     expect(find.text('WIN'), findsOneWidget);
+    // The app account stays visible above the connected statistics.
+    expect(find.text('AshKetchum'), findsOneWidget);
   });
 }

@@ -17,6 +17,7 @@ class LocalStore {
   static const _recentKey = 'recent_searches';
   static const _favoritesKey = 'favorite_heroes';
   static const _sessionKey = 'player_session_token';
+  static const _accountKey = 'account_session_token';
   static const _maxRecent = 10;
 
   // — Player connection ——————————————————————————————————————
@@ -29,6 +30,15 @@ class LocalStore {
   Future<void> saveSessionToken(String token) => _prefs.setString(_sessionKey, token);
 
   Future<void> clearSessionToken() => _prefs.remove(_sessionKey);
+
+  // App account (Google sign-in): an opaque bearer token for the MLBB Tracker
+  // account. It is not a Google credential (the Google ID token is used once
+  // and discarded) and not a Moonton credential.
+  String? readAccountToken() => _prefs.getString(_accountKey);
+
+  Future<void> saveAccountToken(String token) => _prefs.setString(_accountKey, token);
+
+  Future<void> clearAccountToken() => _prefs.remove(_accountKey);
 
   // — Recent searches ————————————————————————————————————————
   List<RecentSearch> readRecentSearches() {

@@ -84,9 +84,12 @@ All settings are environment variables prefixed `MLBB_` (or a `.env` file in
    **unencrypted** (development default). Encrypt it at rest (or keep it in a
    secrets manager) before exposing the API publicly, and move the on-device
    session key to platform secure storage.
-5. **Rate limiting** — not implemented yet. Put a reverse proxy in front of
-   `/api/v1/players/connect/*` before public exposure.
-6. **Provider attribution** — MLBBDex data is CC BY-SA; the attribution is
+5. **Rate limiting** - not implemented yet. Put a reverse proxy in front of
+   `/api/v1/players/connect/*` and `/api/v1/auth/*` before public exposure.
+6. **Google sign-in** - set `MLBB_GOOGLE_CLIENT_ID` and add the exact
+   production origin to the OAuth client's authorized JavaScript origins
+   (section 10). Never commit a real `.env`.
+7. **Provider attribution** - MLBBDex data is CC BY-SA; the attribution is
    carried in every API response envelope and surfaced in the app.
 
 ## 5. Reverse proxy (nginx)
@@ -247,6 +250,78 @@ fetched from fonts.gstatic.com and served from the browser's HTTP cache.
 Offline-first visits fall back to system fonts - the app renders correctly,
 just with different type. Bundle the TTFs in `pubspec.yaml` if pixel-identical
 offline typography matters.
+
+---
+
+## 10. Google sign-in (the only credential)
+
+The app has **no password login**: accounts are created and signed in with
+Google. The profile fields (username, self-declared MLBB ID, app password) are
+collected afterwards and are app-only.
+
+### Create the OAuth client (Google Cloud Console)
+
+1. Create (or pick) a project, then **APIs & Services → OAuth consent screen**.
+   Choose *External*, add the app name, support email and developer contact.
+   While the app is in *Testing*, add every tester's Google address.
+2. **APIs & Services → Credentials → Create credentials → OAuth client ID**.
+3. **Application type: Web application.** This one client serves both the web
+   app and (as `serverClientId`) Android.
+4. **Authorized JavaScript origins** — every origin the web app is served
+   from, exactly (scheme + host + port, no path):
+   - `http://localhost:8000` and `http://127.0.0.1:8000` for local runs;
+   - the production origin, e.g. `https://mlbb-tracker.example.com`.
+5. No redirect URI is needed: Google Identity Services returns the ID token to
+   the page, and the app posts it to `/api/v1/auth/google`.
+
+### Configure the backend
+
+```bash
+MLBB_GOOGLE_CLIENT_ID=1234567890-abc.apps.googleusercontent.com
+MLBB_USER_SESSION_TTL_DAYS=30
+```
+
+The client ID is public (it ships to the browser), so exposing it through
+`GET /api/v1/auth/config` is safe. **Leaving it empty disables sign-in
+honestly**: the config reports `googleSignInEnabled: false`, the app shows
+"Google sign-in is not configured", and `POST /auth/google` answers `503
+GOOGLE_NOT_CONFIGURED`. Nothing pretends to work.
+
+### How the token is verified
+
+The backend verifies the ID token **locally**, not by calling Google per
+request: RS256 signature against Google's JWKS (cached for an hour, refetched
+once on an unknown key id), plus issuer, audience (our client ID), expiry and
+`email_verified`. Only then is the `sub` claim trusted as the account key. The
+token itself is never stored; app sessions are separate opaque bearer tokens
+whose SHA-256 digest is what the database keeps.
+
+### Android
+
+`google_sign_in` on Android uses the same **web** client ID as
+`serverClientId`. Add the app's signing certificate to the client:
+
+- **Credentials → your web client → Authorized origins** is web only; for
+  Android, add an **Android OAuth client** (package name
+  `com.example.mlbb_tracker`, plus the SHA-1 of the signing key) so Google
+  recognizes the app. With debug signing, get the fingerprint with
+  `cd mobile/android && ./gradlew signingReport`.
+
+Without the SHA-1 registration the account picker opens and then fails with a
+configuration error — the app surfaces that message rather than silently
+failing.
+
+### Local check
+
+```bash
+curl http://127.0.0.1:8000/api/v1/auth/config
+# googleSignInEnabled: true once MLBB_GOOGLE_CLIENT_ID is set
+```
+
+Open the web app in Chrome from an origin listed above, go to **Players**, and
+use the official Google button. Real end-to-end sign-in cannot be tested
+without a client ID; until one is configured the app deliberately shows the
+not-configured state.
 
 ---
 

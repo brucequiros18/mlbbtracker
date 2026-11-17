@@ -5,12 +5,37 @@
 
 create extension if not exists "pgcrypto";
 
--- ── Users (optional; backed by Supabase Auth) ────────────────────────────────
+-- ── App accounts (Google is the only credential) ─────────────────────────
+-- `google_sub` is the stable `sub` claim of a verified Google ID token.
+-- `mlbb_id` is self-declared and never verified against Moonton.
+-- `password_hash` is an app-only salted scrypt hash: never a login method.
 create table if not exists users (
-    id          uuid primary key default gen_random_uuid(),
-    email       text unique,
-    created_at  timestamptz not null default now()
+    id              bigint generated always as identity primary key,
+    google_sub      text not null unique,
+    email           text not null,
+    email_verified  boolean not null default false,
+    google_name     text,
+    picture_url     text,
+    username        text unique,
+    mlbb_id         text,
+    password_hash   text,
+    created_at      timestamptz not null default now(),
+    updated_at      timestamptz not null default now(),
+    last_login_at   timestamptz not null default now()
 );
+create unique index if not exists idx_users_username_lower on users (lower(username));
+
+-- ── App sessions (one row per Google sign-in) ───────────────────────────
+-- Only the SHA-256 digest of the opaque bearer token is stored.
+create table if not exists user_sessions (
+    id           bigint generated always as identity primary key,
+    token_hash   text not null unique,
+    user_id      bigint not null references users (id) on delete cascade,
+    created_at   timestamptz not null default now(),
+    expires_at   timestamptz not null,
+    last_seen_at timestamptz not null default now()
+);
+create index if not exists idx_user_sessions_user on user_sessions (user_id);
 
 -- ── Heroes ───────────────────────────────────────────────────────────────────
 create table if not exists heroes (
@@ -97,7 +122,7 @@ create index if not exists idx_match_history_player
 -- ── Tracked players (follow) ─────────────────────────────────────────────────
 create table if not exists tracked_players (
     id         bigint generated always as identity primary key,
-    user_id    uuid not null references users (id) on delete cascade,
+    user_id    bigint not null references users (id) on delete cascade,
     player_id  text not null,
     zone_id    text not null,
     created_at timestamptz not null default now(),
@@ -107,7 +132,7 @@ create table if not exists tracked_players (
 -- ── Favourites ───────────────────────────────────────────────────────────────
 create table if not exists favorites (
     id         bigint generated always as identity primary key,
-    user_id    uuid not null references users (id) on delete cascade,
+    user_id    bigint not null references users (id) on delete cascade,
     hero_id    integer not null references heroes (id) on delete cascade,
     created_at timestamptz not null default now(),
     unique (user_id, hero_id)
@@ -116,7 +141,7 @@ create table if not exists favorites (
 -- ── Recent searches ──────────────────────────────────────────────────────────
 create table if not exists recent_searches (
     id          bigint generated always as identity primary key,
-    user_id     uuid not null references users (id) on delete cascade,
+    user_id     bigint not null references users (id) on delete cascade,
     player_id   text not null,
     zone_id     text not null,
     searched_at timestamptz not null default now(),

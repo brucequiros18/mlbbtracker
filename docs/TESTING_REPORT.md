@@ -1,6 +1,7 @@
 # Testing Report
 
-Date: **2026-11-13**. Platform: Windows 11.
+Date: **2026-11-13**. Latest full run: **2026-11-17** (105 backend, 12 widget).
+Platform: Windows 11.
 
 Automated tests are **fully offline** (no third-party dependency). Live
 integration is exercised by a separate, manually-run smoke script.
@@ -201,16 +202,38 @@ are unavailable from gstatic.com; the app falls back to system fonts and the
 console logs repeated font-fetch warnings (154-181 per offline run). Rendering
 and navigation are unaffected. See `docs/DEPLOYMENT.md` section 9.
 
+## 5g. Google-only accounts (backend + release web build)
+
+| Scenario | Evidence |
+|---|---|
+| Sign-in is Google-only | Players tab renders `SignInView`; no password or email login exists in the app or the API |
+| Unconfigured server | `GET /api/v1/auth/config` -> 200, `googleSignInEnabled: false`, `googleClientId: null`; `POST /api/v1/auth/google` -> `503 GOOGLE_NOT_CONFIGURED`; the app shows "Google sign-in is not configured" and **no** dead button |
+| Token verification | 13 offline tests sign real RS256 tokens with a locally generated RSA key: valid -> identity; JWKS cached (1 fetch for 2 tokens); unknown `kid` -> one refetch; wrong audience/issuer/expiry/`email_verified`/missing email -> `401`; HS256/garbage -> `401`; JWKS outage -> `503` |
+| Registration | 23 endpoint tests: profile completion, password stored only as `scrypt$...` (plaintext absent), duplicate username case-insensitive -> `409`, second profile -> `409`, 6 validation cases -> `422`, unauthenticated -> `401` |
+| MLBB ID is self-declared | Every account payload returns `mlbbIdVerified: false`; `meta.note` says "MLBB ID is self-declared by the player and is not verified."; widget test asserts the "self-declared" badge |
+| Sessions | Opaque token, DB holds only its SHA-256 digest; expired session -> `401` and the row is deleted; logout removes only the session, not the account |
+| Profile edits | Wrong app password -> `403 INVALID_PASSWORD` and nothing changes; correct password changes username/MLBB ID and re-hashes a new password |
+| Sign-out UX | Widget test: signing out clears the account token **and** the player session, returning to the sign-in screen |
+| Published release | `/download` serves **0.10.0+10** (52.2 MB, SHA-256 `424116e5…452f`, Android 7.0+) with the Google-account release notes, verified in the served HTML |
+| Totals | **105 backend tests** (was 69), **12 widget tests** (was 6), `flutter analyze` clean |
+
+**Known gap:** real end-to-end Google sign-in cannot be tested without an OAuth
+client ID and authorized JavaScript origins. The scaffold reports that state
+instead of pretending to work; see `docs/DEPLOYMENT.md` section 10.
+
 ## 6. Not yet tested (honest gaps)
 
 - **On-device run** on `Medium_Phone_API_36.1` (Milestone 7).
 - **Full live sign-in** with a real account (requires the player's in-game
-  mailbox — see 5b).
+  mailbox — see 5b) and **live Google sign-in** (requires an OAuth client ID
+  and authorized origins — see 5g).
 - **Integration tests** app↔API (contract tests) — planned.
 - **Performance/size** profiling and security review — planned.
 - **iOS** — project exists, not built (Android-first).
 
 ## Verdict
 
-Backend: green (unit + live + HTTP). Mobile: analyze clean, 3 widget tests green.
-No feature is claimed complete without the above evidence.
+Backend: green (unit + live + HTTP). Mobile: analyze clean, 12 widget tests green.
+Google sign-in is fully implemented and verified offline; a live end-to-end
+sign-in still needs an OAuth client ID. No feature is claimed complete without
+the above evidence.

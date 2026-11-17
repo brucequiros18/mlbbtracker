@@ -96,6 +96,61 @@ Returns `HeroDetail`:
  "rank_stat":{"win_rate":0.546321,"ban_rate":0.020853,"pick_rate":0.003423}}
 ```
 
+### Account endpoints (Google-only sign-in)
+
+Google is the **only** credential. There is no password login and no email
+login. The MLBB ID collected at registration is **self-declared** — stored as
+typed, never checked against Moonton — so every account payload carries
+`mlbbIdVerified: false`. The app password is app-only: a salted scrypt hash
+that confirms profile edits and is never used to sign in.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/auth/config` | none | Is Google configured? Which client ID? |
+| `POST` | `/auth/google` | none | Exchange a Google ID token for an app session |
+| `POST` | `/auth/register` | bearer | Set username, MLBB ID and app password |
+| `GET` | `/auth/me` | bearer | The signed-in account |
+| `PATCH` | `/auth/me` | bearer | Change profile (confirmed by the app password) |
+| `POST` | `/auth/logout` | bearer | Forget this session |
+
+`GET /auth/config`
+
+```json
+{"data": {"googleSignInEnabled": true,
+          "googleClientId": "1234-abc.apps.googleusercontent.com",
+          "minPasswordLength": 8, "maxPasswordLength": 128,
+          "usernamePattern": "^[A-Za-z0-9_]{3,24}$",
+          "mlbbIdPattern": "^\\d{4,20}$"},
+ "meta": {"note": "Google is the only sign-in method.", "...": "..."}}
+```
+
+With no `MLBB_GOOGLE_CLIENT_ID`, `googleSignInEnabled` is `false` and
+`googleClientId` is `null`; `POST /auth/google` then answers `503
+GOOGLE_NOT_CONFIGURED`.
+
+`POST /auth/google` — body `{"credential": "<Google ID token>"}`. The token is
+verified locally (RS256 against Google's JWKS, issuer, audience, expiry,
+`email_verified`). Response:
+
+```json
+{"data": {"sessionToken": "<opaque bearer token>",
+          "isNewUser": true,
+          "user": {"id": 1, "email": "player@example.com",
+                   "googleName": "Ash", "pictureUrl": null,
+                   "username": null, "mlbbId": null,
+                   "profileComplete": false, "mlbbIdVerified": false,
+                   "createdAt": "...", "lastLoginAt": "..."}}}
+```
+
+`POST /auth/register` — body `{"username": "AshKetchum", "mlbbId":
+"123456789", "password": "at least 8 characters"}`. `409 USERNAME_TAKEN` when
+the name is taken (case-insensitive), `409 PROFILE_ALREADY_COMPLETE` when the
+account already has a profile.
+
+`PATCH /auth/me` — body `{"username"?, "mlbbId"?, "currentPassword",
+"newPassword"?}`. `403 INVALID_PASSWORD` when the app password does not match;
+nothing is changed in that case.
+
 ### Player endpoints (consented sign-in)
 
 The app connects **the player's own account**. No password is ever requested:
@@ -155,7 +210,10 @@ serves player statistics. Body:
 ```
 
 ### Error codes
-`NOT_FOUND` (404) · `PROVIDER_AUTH_REQUIRED` (401) · `VALIDATION_ERROR` (422) ·
+`NOT_FOUND` (404) · `AUTH_REQUIRED` (401) · `GOOGLE_TOKEN_INVALID` (401) ·
+`GOOGLE_NOT_CONFIGURED` (503) · `INVALID_PASSWORD` (403) ·
+`USERNAME_TAKEN` (409) · `PROFILE_ALREADY_COMPLETE` (409) ·
+`PROVIDER_AUTH_REQUIRED` (401) · `VALIDATION_ERROR` (422) ·
 `NOT_SUPPORTED` (501) · `PROVIDER_ERROR` (502) · `PROVIDER_UNAVAILABLE` (503) ·
 `INTERNAL_ERROR` (500).
 
