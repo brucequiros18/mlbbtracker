@@ -28,11 +28,12 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB = ROOT / "mobile" / "web"
+PUBLIC = ROOT / "web" / "public"
 
-# Accent gradient: the design system's #8B7CFF, deepened for contrast.
-START = (155, 140, 255)  # #9B8CFF
-MID = (124, 108, 247)    # #7C6CF7
-END = (86, 70, 214)      # #5646D6
+# Accent gradient: the Claude Fable terracotta, deepened for contrast.
+START = (226, 145, 110)  # #E2916E
+MID = (201, 100, 66)     # #C96442
+END = (172, 79, 47)      # #AC4F2F
 
 # The mark, in a 24x24 viewbox (same geometry as the download page logo).
 LINE = [(4, 17), (9, 9), (13, 14), (16, 10), (20, 17)]
@@ -101,6 +102,8 @@ def icon(size: int, *, ratio: float, rounded: bool) -> Image.Image:
 def main() -> None:
     icons = WEB / "icons"
     icons.mkdir(parents=True, exist_ok=True)
+    public = PUBLIC / "icons"
+    public.mkdir(parents=True, exist_ok=True)
 
     outputs = {
         icons / "Icon-192.png": icon(192, ratio=0.62, rounded=True),
@@ -111,6 +114,13 @@ def main() -> None:
         # iOS applies its own rounded mask, so ship it full bleed.
         WEB / "apple-touch-icon.png": icon(180, ratio=0.58, rounded=False),
         WEB / "favicon.png": icon(64, ratio=0.70, rounded=True),
+        # The same set for the React PWA (web/public), referenced by the
+        # web app manifest.
+        public / "icon-192.png": icon(192, ratio=0.62, rounded=True),
+        public / "icon-512.png": icon(512, ratio=0.62, rounded=True),
+        public / "icon-maskable-192.png": icon(192, ratio=0.46, rounded=False),
+        public / "icon-maskable-512.png": icon(512, ratio=0.46, rounded=False),
+        PUBLIC / "apple-touch-icon.png": icon(180, ratio=0.58, rounded=False),
     }
 
     for path, image in outputs.items():

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
 <meta name="description" content="Download MLBB Tracker for Android - live Mobile Legends meta analytics, recorded history and esports standings. Unofficial fan project.">
-<meta name="theme-color" content="#111318">
+<meta name="theme-color" content="#faf9f5">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MLBB Tracker">
@@ -14,31 +14,33 @@
 <title>Download MLBB Tracker</title>
 <style>
   :root {
-    --bg: #111318; --bg-2: #171a22; --card: #1b1f29; --border: #262b38;
-    --text: #f5f5f7; --text-2: #a4a8b4; --muted: #747b8b;
-    --accent: #8b7cff; --accent-soft: rgba(139,124,255,.16);
-    --ok: #39d6a3; --warn: #f5b85b;
+    --bg: #faf9f5; --bg-2: #f0eee6; --card: #ffffff; --border: #e5e1d8;
+    --text: #1f1e1d; --text-2: #57564f; --muted: #8a867a;
+    --accent: #c15f3c; --accent-soft: rgba(193,95,60,.12);
+    --ok: #5f7d42; --warn: #a87e2f;
   }
-  @media (prefers-color-scheme: light) {
+  @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #f6f7fb; --bg-2: #ffffff; --card: #ffffff; --border: #e2e5ee;
-      --text: #14161c; --text-2: #4b5162; --muted: #8a90a2;
-      --accent: #6c5ce7; --accent-soft: rgba(108,92,231,.10);
+      --bg: #262624; --bg-2: #2e2d2a; --card: #31302d; --border: #44433e;
+      --text: #f5f4ef; --text-2: #b5b1a5; --muted: #87837a;
+      --accent: #d97757; --accent-soft: rgba(217,119,87,.16);
+      --ok: #9db880; --warn: #d9a662;
     }
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font: 16px/1.6 "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
+  h1, h2 { font-family: "Lora", "Iowan Old Style", Georgia, serif; }
   .wrap { max-width: 640px; margin: 0 auto; padding: 48px 20px 64px; }
   .hero { text-align: center; margin-bottom: 28px; }
   .logo {
     width: 76px; height: 76px; border-radius: 20px; margin: 0 auto 16px;
-    background: linear-gradient(135deg, var(--accent), #5646d6);
+    background: linear-gradient(135deg, #d97757, #b85433);
     display: grid; place-items: center;
-    box-shadow: 0 8px 28px rgba(108,92,231,.35);
+    box-shadow: 0 8px 28px rgba(201,100,66,.32);
   }
   .logo svg { width: 40px; height: 40px; }
   h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
