@@ -1,6 +1,6 @@
 # MLBB Tracker
 
-A Mobile Legends: Bang Bang analytics platform — Flutter (Dart) app (Android + **web**) + Python FastAPI backend.
+A Mobile Legends: Bang Bang analytics platform — **Laravel (PHP) API** + **React (Vite + TypeScript) web app**, with a Flutter (Dart) Android client.
 
 > **Status: Milestones 1–6 done.** Hero/meta analytics, esports standings and
 > **your own player statistics** (via a consented in-game code sign-in) are
@@ -16,7 +16,7 @@ A Mobile Legends: Bang Bang analytics platform — Flutter (Dart) app (Android +
 - **Recorded history** — daily snapshots the backend itself observes, served from the database.
 - **Esports** — MPL Indonesia / Philippines / Malaysia / Cambodia standings, schedules and match details.
 - **Player tracking** — connect **your own** account with a one-time code from your in-game mailbox; real profile, stats (wins, win rate, avg score, MVP count, win streak), match history with K/D/A and W/L, and top heroes. Live-polling every 60 s.
-- **Google-only accounts** — sign up and sign in with Google, then choose a username, enter your MLBB ID and set an app password. The MLBB ID is **self-declared** (never checked against Moonton, always labelled that way); the app password is stored only as a salted scrypt hash, is never sent to Moonton and is never a login method — it only confirms profile edits. Set `MLBB_GOOGLE_CLIENT_ID` to enable it; without one the app says so honestly. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#10-google-sign-in-the-only-credential).
+- **Google-only accounts** — sign up and sign in with Google, then choose a username, enter your MLBB ID and set an app password. The MLBB ID is **self-declared** (never checked against Moonton, always labelled that way); the app password is stored only as an **Argon2id** hash (PHP `password_hash`), is never sent to Moonton and is never a login method — it only confirms profile edits. Set `MLBB_GOOGLE_CLIENT_ID` to enable it; without one the app says so honestly. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#10-google-sign-in-the-only-credential).
 - **Web app** - the Flutter web build is served by the API from a single origin: one URL, no CORS setup. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 - **Installable + offline (PWA)** - a real manifest, generated icons and a service worker: install it from the browser (own window, home-screen icon) and the app shell still launches with no connection. API calls are never cached, so offline you get honest error states, not stale numbers.
 - **Download page** - `/download` serves a real Android APK with version, size, SHA-256 and install steps (`.\scripts\package_apk.ps1` publishes it), plus an "Install the web app" card. Honest "no build published yet" state until an APK exists.
@@ -111,7 +111,7 @@ Accounts use **Google as the only credential**. The backend verifies the Google
 ID token locally (RS256 signature against Google's JWKS, issuer, audience,
 expiry, `email_verified`) and keeps only the stable Google `sub`; the token is
 never stored. App sessions are separate opaque bearer tokens whose SHA-256
-digest is all the database holds. The app password is app-only: a salted scrypt
-hash, never sent to Moonton, never a sign-in method. The MLBB ID is
-self-declared and never verified against Moonton — the API returns
+digest is all the database holds. The app password is app-only: an **Argon2id**
+hash (PHP `password_hash`), never sent to Moonton, never a sign-in method. The
+MLBB ID is self-declared and never verified against Moonton — the API returns
 `mlbbIdVerified: false` everywhere so clients cannot mistake it for a fact.

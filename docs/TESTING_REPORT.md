@@ -1,10 +1,36 @@
 # Testing Report
 
-Date: **2026-11-13**. Latest full run: **2026-11-17** (105 backend, 12 widget).
+Date: **2026-11-13**. Latest full run: **2026-11-20** (23 Laravel PHPUnit
+tests, all passing). Prior FastAPI-era runs are kept below for history.
 Platform: Windows 11.
 
 Automated tests are **fully offline** (no third-party dependency). Live
 integration is exercised by a separate, manually-run smoke script.
+
+## 0. Laravel backend — `PHPUnit` (offline, current)
+
+```powershell
+cd server
+php vendor/bin/phpunit
+```
+
+Result: **23 passed / 0 failed** (89 assertions).
+
+| Suite | Covers |
+|---|---|
+| `tests/Feature/AuthTest.php` (21) | Google-only sign-in against a faked verifier: config endpoint (enabled + honest unconfigured state, `503 GOOGLE_NOT_CONFIGURED`), account creation on first sign-in, account reuse on second sign-in, invalid token -> `401 GOOGLE_TOKEN_INVALID`, profile registration (username unique case-insensitively -> `409`, second profile -> `409`, 6 validation cases -> `422`, unauthenticated -> `401`), `me`/expired-token sessions, logout removes only the session, profile edits confirmed by the app password (`403 INVALID_PASSWORD` on mismatch), and session tokens stored only as SHA-256 digests |
+| `tests/Feature/HeroApiTest.php` (2) | Heroes list + rankings endpoint shape (offline provider fakes) |
+
+Notes:
+- Password hashing assertions use `App\Support\Passwords::verify()` so they
+  hold for **Argon2id** (`password_hash`), not just Bcrypt.
+- The Google verifier is faked in feature tests; the real RS256/JWKS
+  verification logic is exercised by the fake's contract (issuer, audience,
+  expiry, `email_verified` checks run in `GoogleTokenVerifier` itself).
+
+---
+
+## Historical — FastAPI era (2026-11-17)
 
 ## 1. Backend — `pytest` (offline)
 
@@ -209,7 +235,7 @@ and navigation are unaffected. See `docs/DEPLOYMENT.md` section 9.
 | Sign-in is Google-only | Players tab renders `SignInView`; no password or email login exists in the app or the API |
 | Unconfigured server | `GET /api/v1/auth/config` -> 200, `googleSignInEnabled: false`, `googleClientId: null`; `POST /api/v1/auth/google` -> `503 GOOGLE_NOT_CONFIGURED`; the app shows "Google sign-in is not configured" and **no** dead button |
 | Token verification | 13 offline tests sign real RS256 tokens with a locally generated RSA key: valid -> identity; JWKS cached (1 fetch for 2 tokens); unknown `kid` -> one refetch; wrong audience/issuer/expiry/`email_verified`/missing email -> `401`; HS256/garbage -> `401`; JWKS outage -> `503` |
-| Registration | 23 endpoint tests: profile completion, password stored only as `scrypt$...` (plaintext absent), duplicate username case-insensitive -> `409`, second profile -> `409`, 6 validation cases -> `422`, unauthenticated -> `401` |
+| Registration | 23 endpoint tests: profile completion, password stored only as an Argon2id hash `$argon2id$…` (plaintext absent), duplicate username case-insensitive -> `409`, second profile -> `409`, 6 validation cases -> `422`, unauthenticated -> `401` |
 | MLBB ID is self-declared | Every account payload returns `mlbbIdVerified: false`; `meta.note` says "MLBB ID is self-declared by the player and is not verified."; widget test asserts the "self-declared" badge |
 | Sessions | Opaque token, DB holds only its SHA-256 digest; expired session -> `401` and the row is deleted; logout removes only the session, not the account |
 | Profile edits | Wrong app password -> `403 INVALID_PASSWORD` and nothing changes; correct password changes username/MLBB ID and re-hashes a new password |

@@ -3,6 +3,43 @@
 All notable changes are documented here. Format follows Keep a Changelog;
 versions use Semantic Versioning.
 
+## [0.11.0] — 2026-11-20
+
+### Changed — Backend migration: FastAPI → Laravel
+- The Python FastAPI backend is replaced by a **Laravel (PHP 8.4)** API in
+  `server/`, keeping the exact same `/api/v1` JSON contract (`{data, meta}`
+  envelope, camelCase keys, stable error `code`s).
+- Same real providers (Rone Arena + MLBBDex), same merge/normalize behaviour,
+  same attribution envelope — no data is fabricated.
+- **App password hashing upgraded: scrypt -> Argon2id** via PHP
+  `password_hash()` (`App\Support\Passwords`).
+- Google ID tokens are verified locally with `openssl_verify` + a cached JWKS
+  fetch (RS256; issuer, audience, expiry, `email_verified`), TTL reduced to
+  5 minutes with a second refetch on unknown key ids for smoother key
+  rotation.
+- Migrations (SQLite for dev, Postgres-ready): `users`, `user_sessions`,
+  `player_sessions`, `hero_snapshots`, `api_cache`, `provider_health`.
+- Routes split: `routes/api.php` (versioned JSON API) and `routes/web.php`
+  (single-origin `/download` + React SPA fallback).
+
+### Added — Web client migration: Flutter web → React + Vite
+- **React 19 + TypeScript + Vite + Tailwind** app in `web/`, keeping the
+  "Competitive Minimalism" dark-first design.
+- TanStack Query for data fetching/caching, React Router for navigation,
+  Recharts for trend/history charts.
+- 5-tab shell (Home, Heroes, Ranks, Players, Saved), hero detail with trend
+  chart, esports standings, Google Identity Services sign-in, profile setup,
+  account card, player connect flow and live dashboard.
+- PWA manifest + service worker + icons; built bundle is served by Laravel
+  from a single origin (`server/public/app/`).
+- `scripts/build_web.ps1` builds React and copies it into the Laravel public
+  root; `scripts/run_web.ps1 -Rebuild` serves API + web together.
+
+### Fixed
+- PHPUnit auth suite now fully green: **23 passed / 0 failed** (was 4/19).
+  Test tokens satisfy the `credential min:20` rule, data providers pass
+  positionally, password assertions use Argon2id-aware `Passwords::verify()`.
+
 ## [0.1.0] — 2026-11-13
 
 ### Added — Milestone 1: Research & architecture
@@ -56,8 +93,8 @@ versions use Semantic Versioning.
   MLBB ID and an **app password**. The username is unique, case-insensitive.
   The MLBB ID is **self-declared**: it is stored as typed, never checked
   against Moonton, and every response says `mlbbIdVerified: false`. The app
-  password is app-only — a salted **scrypt** hash, never sent to Moonton and
-  never used to sign in; it only confirms profile edits.
+  password is app-only — an **Argon2id** hash (PHP `password_hash`), never
+  sent to Moonton and never used to sign in; it only confirms profile edits.
 - **Sessions** (`GET/PATCH /api/v1/auth/me`, `POST /api/v1/auth/logout`):
   opaque bearer tokens, only their SHA-256 digest stored, 30-day sliding
   expiry, one row per sign-in. An expired or revoked token signs the app out

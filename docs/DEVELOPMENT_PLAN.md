@@ -58,10 +58,10 @@ error states). Install is offered on `/download` and via the address bar.
 only — there is no password login and no anonymous account. The Google ID token
 is verified locally on the backend (JWKS/RS256, issuer, audience, expiry,
 `email_verified`), then the player chooses a username, enters their MLBB ID
-(self-declared, never verified) and an app password (salted scrypt, app-only,
-never a login method). Sessions are opaque bearer tokens stored only as
-SHA-256 digests. Unconfigured servers say so instead of showing a dead button.
-Real end-to-end sign-in still needs an OAuth client ID.
+(self-declared, never verified) and an app password (**Argon2id** via PHP
+`password_hash`, app-only, never a login method). Sessions are opaque bearer
+tokens stored only as SHA-256 digests. Unconfigured servers say so instead of
+showing a dead button. Real end-to-end sign-in still needs an OAuth client ID.
 
 ## Next steps
 

@@ -1,14 +1,18 @@
 # API Documentation
 
-Two layers: **our API** (what the Flutter app calls) and the **external
-providers** it aggregates. All external endpoints were verified live on
-2026-11-13; raw responses live in `docs/research/samples/`.
+Two layers: **our API** (what the web app and the Flutter Android app call)
+and the **external providers** it aggregates. All external endpoints were
+verified live on 2026-11-13; raw responses live in
+`docs/research/samples/`.
+
+The backend is **Laravel (PHP 8.4)** in `server/`; the previous FastAPI
+service served the identical contract.
 
 ---
 
 ## A. MLBB Tracker API (our backend)
 
-Base URL: `http://<host>:8000/api/v1` · OpenAPI: `/docs`, `/openapi.json`
+Base URL: `http://<host>:8000/api/v1`
 
 **Envelope.** Lists return `{"data": [...], "meta": {...}}`; items return
 `{"data": {...}, "meta": {...}}`. Errors return
@@ -101,8 +105,8 @@ Returns `HeroDetail`:
 Google is the **only** credential. There is no password login and no email
 login. The MLBB ID collected at registration is **self-declared** — stored as
 typed, never checked against Moonton — so every account payload carries
-`mlbbIdVerified: false`. The app password is app-only: a salted scrypt hash
-that confirms profile edits and is never used to sign in.
+`mlbbIdVerified: false`. The app password is app-only: an **Argon2id** hash
+(PHP `password_hash`) that confirms profile edits and is never used to sign in.
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|

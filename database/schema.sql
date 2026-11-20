@@ -1,5 +1,7 @@
 -- MLBB Tracker — PostgreSQL (Supabase) schema
--- Bootstrap a fresh database. Migrations are managed with Alembic.
+-- Bootstrap a fresh database. The canonical migrations now live in the
+-- Laravel app (`server/database/migrations/`); this file remains a convenient
+-- Supabase bootstrap for production provisioning.
 -- Timestamps are UTC (timestamptz). Public game data is world-readable;
 -- user-owned rows are protected by Row Level Security.
 
@@ -8,7 +10,8 @@ create extension if not exists "pgcrypto";
 -- ── App accounts (Google is the only credential) ─────────────────────────
 -- `google_sub` is the stable `sub` claim of a verified Google ID token.
 -- `mlbb_id` is self-declared and never verified against Moonton.
--- `password_hash` is an app-only salted scrypt hash: never a login method.
+-- `password_hash` is an app-only Argon2id hash (PHP password_hash): never a
+-- login method.
 create table if not exists users (
     id              bigint generated always as identity primary key,
     google_sub      text not null unique,

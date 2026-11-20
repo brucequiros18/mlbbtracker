@@ -49,9 +49,10 @@ Google token is stored.
 
 `users.mlbb_id` is **self-declared**: it is typed in by the player, stored as
 given, and never verified against Moonton, so `UserAccount.mlbbIdVerified` is
-always `false`. `users.password_hash` is an app-only salted **scrypt** hash
-(`scrypt$n$r$p$salt$hash`); it is never sent to Moonton and is not a sign-in
-method — it only confirms profile edits (`PATCH /api/v1/auth/me`).
+always `false`. `users.password_hash` is an app-only **Argon2id** hash (PHP
+`password_hash`, format `$argon2id$v=19$m=…,t=…,p=…$salt$hash`); it is never
+sent to Moonton and is not a sign-in method — it only confirms profile edits
+(`PATCH /api/v1/auth/me`).
 
 `user_sessions` mirrors the consented player-session pattern: the app holds an
 opaque bearer token and the database stores only its SHA-256 digest. Sessions
