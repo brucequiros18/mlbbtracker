@@ -6,6 +6,9 @@ use App\Services\AuthService;
 use App\Services\FirebaseTokenVerifier;
 use App\Services\GoogleTokenVerifier;
 use App\Services\ProviderHealthRecorder;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -68,6 +71,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // The auth endpoints are the only public, unauthenticated write
+        // surface: without a limit they invite credential brute-forcing and
+        // token-spam. 10/min per IP is far above any human's pace.
+        RateLimiter::for('auth', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
+
+        // Player connect sends an in-game verification email per call, so it
+        // gets the tighter budget.
+        RateLimiter::for('connect', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
     }
 }

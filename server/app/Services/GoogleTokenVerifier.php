@@ -252,21 +252,82 @@ class GoogleTokenVerifier
             return null;
         }
 
-        $key = openssl_pkey_new([
-            'private_key_type' => OPENSSL_KEYTYPE_RSA,
-            'public_key' => [
-                'n' => $this->base64UrlDecode((string) $jwk['n']),
-                'e' => $this->base64UrlDecode((string) $jwk['e']),
-            ],
-        ]);
+        // The PEM is assembled with a small DER encoder instead of
+        // openssl_pkey_new: constructing a public key from raw modulus and
+        // exponent components is exactly the OpenSSL call that fails on
+        // hosts with a broken OPENSSL_CONF, and the encoding is fully
+        // specified so it needs no OpenSSL at all.
+        $modulus = $this->base64UrlDecode((string) $jwk['n']);
+        $exponent = $this->base64UrlDecode((string) $jwk['e']);
 
-        if ($key === false) {
+        if ($modulus === '' || $exponent === '') {
             return null;
         }
 
-        $details = openssl_pkey_get_details($key);
+        $rsaPublicKey = $this->derSequence(
+            $this->derInteger($modulus).
+            $this->derInteger($exponent)
+        );
 
-        return is_array($details) && isset($details['key']) ? (string) $details['key'] : null;
+        // SubjectPublicKeyInfo: SEQUENCE { SEQUENCE { OID rsaEncryption, NULL },
+        // BIT STRING { RSAPublicKey } } - rsaEncryption is 1.2.840.113549.1.1.1.
+        $subjectPublicKeyInfo = $this->derSequence(
+            $this->derSequence($this->derOid("\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01").$this->derNull()).
+            $this->derBitString($rsaPublicKey)
+        );
+
+        return "-----BEGIN PUBLIC KEY-----\n".
+            chunk_split(base64_encode($subjectPublicKeyInfo), 64, "\n").
+            '-----END PUBLIC KEY-----';
+    }
+
+    private function derSequence(string $content): string
+    {
+        return $this->derTag(0x30, $content);
+    }
+
+    private function derNull(): string
+    {
+        return "\x05\x00";
+    }
+
+    private function derOid(string $encodedOid): string
+    {
+        return $this->derTag(0x06, $encodedOid);
+    }
+
+    private function derBitString(string $bytes): string
+    {
+        // The first content byte carries the count of unused trailing bits.
+        return $this->derTag(0x03, "\x00".$bytes);
+    }
+
+    private function derInteger(string $bytes): string
+    {
+        // DER integers are signed: a positive value with a high first bit
+        // needs a leading zero byte.
+        $bytes = ltrim($bytes, "\x00");
+
+        if ($bytes === '') {
+            $bytes = "\x00";
+        } elseif (ord($bytes[0]) >= 0x80) {
+            $bytes = "\x00".$bytes;
+        }
+
+        return $this->derTag(0x02, $bytes);
+    }
+
+    private function derTag(int $tag, string $content): string
+    {
+        $length = strlen($content);
+
+        if ($length < 0x80) {
+            return chr($tag).chr($length).$content;
+        }
+
+        $encodedLength = ltrim(pack('N', $length), "\x00");
+
+        return chr($tag).chr(0x80 | strlen($encodedLength)).$encodedLength.$content;
     }
 
     private function base64UrlDecode(string $value): string

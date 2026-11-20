@@ -40,8 +40,10 @@ Route::prefix('v1')->group(function (): void {
     Route::get('esports/{league}/standings', [EsportsController::class, 'standings']);
 
     Route::prefix('players')->group(function (): void {
-        Route::post('connect/start', [PlayerController::class, 'connectStart']);
-        Route::post('connect/verify', [PlayerController::class, 'connectVerify']);
+        Route::middleware('throttle:connect')->group(function (): void {
+            Route::post('connect/start', [PlayerController::class, 'connectStart']);
+            Route::post('connect/verify', [PlayerController::class, 'connectVerify']);
+        });
         Route::post('disconnect', [PlayerController::class, 'disconnect']);
         Route::get('me/profile', [PlayerController::class, 'profile']);
         Route::get('me/stats', [PlayerController::class, 'stats']);
@@ -52,9 +54,11 @@ Route::prefix('v1')->group(function (): void {
 
     Route::prefix('auth')->group(function (): void {
         Route::get('config', [AuthController::class, 'config']);
-        Route::post('firebase', [AuthController::class, 'firebase']);
-        Route::post('google', [AuthController::class, 'google']);
-        Route::post('register', [AuthController::class, 'register']);
+        Route::middleware('throttle:auth')->group(function (): void {
+            Route::post('firebase', [AuthController::class, 'firebase']);
+            Route::post('google', [AuthController::class, 'google']);
+            Route::post('register', [AuthController::class, 'register']);
+        });
         Route::get('me', [AuthController::class, 'me']);
         Route::patch('me', [AuthController::class, 'updateMe']);
         Route::post('logout', [AuthController::class, 'logout']);

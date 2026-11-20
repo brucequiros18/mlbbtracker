@@ -6,6 +6,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -64,6 +65,19 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => 'Not found.',
                 'timestamp' => now()->utc()->format('Y-m-d\TH:i:s.u\Z'),
             ], 404);
+        });
+
+        $exceptions->render(function (ThrottleRequestsException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'code' => 'RATE_LIMITED',
+                'message' => 'Too many attempts. Wait a minute and try again.',
+                'timestamp' => now()->utc()->format('Y-m-d\TH:i:s.u\Z'),
+            ], 429);
         });
 
         $exceptions->render(function (AuthenticationException $exception, Request $request) {

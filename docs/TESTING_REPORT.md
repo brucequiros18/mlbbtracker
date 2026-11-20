@@ -1,6 +1,6 @@
 # Testing Report
 
-Date: **2026-11-13**. Latest full run: **2026-11-20** (23 Laravel PHPUnit
+Date: **2026-11-13**. Latest full run: **2026-11-21** (57 Laravel PHPUnit
 tests, all passing). Prior FastAPI-era runs are kept below for history.
 Platform: Windows 11.
 
@@ -14,19 +14,22 @@ cd server
 php vendor/bin/phpunit
 ```
 
-Result: **23 passed / 0 failed** (89 assertions).
+Result: **57 passed / 0 failed** (264 assertions).
 
 | Suite | Covers |
 |---|---|
-| `tests/Feature/AuthTest.php` (21) | Google-only sign-in against a faked verifier: config endpoint (enabled + honest unconfigured state, `503 GOOGLE_NOT_CONFIGURED`), account creation on first sign-in, account reuse on second sign-in, invalid token -> `401 GOOGLE_TOKEN_INVALID`, profile registration (username unique case-insensitively -> `409`, second profile -> `409`, 6 validation cases -> `422`, unauthenticated -> `401`), `me`/expired-token sessions, logout removes only the session, profile edits confirmed by the app password (`403 INVALID_PASSWORD` on mismatch), and session tokens stored only as SHA-256 digests |
-| `tests/Feature/HeroApiTest.php` (2) | Heroes list + rankings endpoint shape (offline provider fakes) |
+| `tests/Feature/AuthTest.php` (30) | Sign-in against faked verifiers (Firebase + Google): config endpoint (per-method enabled/disabled states, `503 GOOGLE_NOT_CONFIGURED`), account creation on first sign-in and reuse on the second, invalid tokens -> `401 GOOGLE_TOKEN_INVALID`, profile registration (username unique case-insensitively -> `409`, spaces/dots accepted, dashes/dots-only rejected, 6 validation cases -> `422`, unauthenticated -> `401`), `me`/expired-token sessions, logout removes only the session, profile edits confirmed by the app password (`403 INVALID_PASSWORD` on mismatch), and session tokens stored only as SHA-256 digests |
+| `tests/Unit/GoogleTokenVerifierTest.php` (13) | The **real** RS256 path offline: tokens signed with a committed test key against a faked JWKS - valid token identity, JWKS caching (1 fetch for 2 tokens), unknown `kid` -> refetch then `401`, impostor signature -> `401`, wrong issuer/audience -> `401`, expired token, unverified/missing email, missing `sub`, HS256 forgery, garbage input, JWKS outage -> `503 PROVIDER_UNAVAILABLE` |
+| `tests/Unit/FirebaseTokenVerifierTest.php` (14) | The **real** Firebase path offline: tokens signed against a self-signed X509 certificate - valid identity (unverified email recorded, not enforced), cert caching, unknown `kid` refetch, impostor signature, wrong issuer/audience, expired, future `iat`, missing email/`sub`, HS256 forgery, garbage, certificate outage -> `503` |
 
 Notes:
 - Password hashing assertions use `App\Support\Passwords::verify()` so they
   hold for **Argon2id** (`password_hash`), not just Bcrypt.
-- The Google verifier is faked in feature tests; the real RS256/JWKS
-  verification logic is exercised by the fake's contract (issuer, audience,
-  expiry, `email_verified` checks run in `GoogleTokenVerifier` itself).
+- The JWK-to-PEM conversion in `GoogleTokenVerifier` is exercised against a
+  real signature check: it uses a small DER encoder instead of
+  `openssl_pkey_new`, which fails on hosts with a broken `OPENSSL_CONF`.
+- Test signing keys are committed under `tests/Support/` (test-only) and are
+  regenerated with `tests/Support/generate.php` when needed.
 
 ---
 

@@ -114,6 +114,16 @@ class ApiException extends Exception
         return $payload;
     }
 
+    public function statusCode(): int
+    {
+        return $this->statusCode;
+    }
+
+    public function errorCode(): string
+    {
+        return $this->errorCode;
+    }
+
     public function render(): JsonResponse
     {
         return response()->json($this->payload(), $this->statusCode);
