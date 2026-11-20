@@ -30,10 +30,10 @@ ROOT = Path(__file__).resolve().parent.parent
 WEB = ROOT / "mobile" / "web"
 PUBLIC = ROOT / "web" / "public"
 
-# Accent gradient: the Claude Fable terracotta, deepened for contrast.
-START = (226, 145, 110)  # #E2916E
-MID = (201, 100, 66)     # #C96442
-END = (172, 79, 47)      # #AC4F2F
+# Accent gradient: the MLBB shield blue, deepened for contrast.
+START = (86, 197, 248)   # #56C5F8
+MID = (46, 124, 214)     # #2E7CD6
+END = (24, 74, 160)      # #184AA0
 
 # The mark, in a 24x24 viewbox (same geometry as the download page logo).
 LINE = [(4, 17), (9, 9), (13, 14), (16, 10), (20, 17)]

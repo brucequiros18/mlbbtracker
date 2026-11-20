@@ -1,48 +1,48 @@
 @import 'tailwindcss';
 
 /*
- * Claude Fable - the design language of a well-made storybook.
+ * Land of Dawn - an MLBB-inspired theme.
  *
- * Warm parchment paper, ink text, one terracotta accent and a bookish serif
- * for display type. The values live as plain CSS variables so the theme can
- * be switched at runtime; `@theme inline` maps them onto Tailwind colours.
+ * Deep midnight-navy arena surfaces, one electric-blue accent, legendary
+ * gold for epic moments and angular esports-HUD display type. Light mode is
+ * the day arena: bright steel-blue surfaces with the same accent.
  *
- * Light is the signature surface (parchment); dark is a warm inked charcoal,
- * never a cool slate.
+ * Values live as plain CSS variables so the theme switches at runtime;
+ * `@theme inline` maps them onto Tailwind colours.
  */
 :root,
-[data-theme='light'] {
-  --bg: #faf9f5;
-  --bg-2: #f0eee6;
-  --card: #ffffff;
-  --elevated: #f5f3ec;
-  --accent: #c15f3c;
-  --accent-soft: rgba(193, 95, 60, 0.12);
-  --positive: #5f7d42;
-  --negative: #bf4236;
-  --warning: #a87e2f;
-  --text: #1f1e1d;
-  --text-2: #57564f;
-  --muted: #8a867a;
-  --border: #e5e1d8;
-  --shadow: 0 8px 28px rgba(74, 62, 48, 0.09);
+[data-theme='dark'] {
+  --bg: #0b1020;
+  --bg-2: #101830;
+  --card: #141c36;
+  --elevated: #1b2444;
+  --accent: #2e7cd6;
+  --accent-soft: rgba(59, 130, 246, 0.16);
+  --positive: #3fcf8e;
+  --negative: #f07868;
+  --warning: #e8c35a;
+  --text: #eaf0ff;
+  --text-2: #a9b5d6;
+  --muted: #6f7ca0;
+  --border: #26305a;
+  --shadow: 0 8px 28px rgba(2, 6, 23, 0.55);
 }
 
-[data-theme='dark'] {
-  --bg: #262624;
-  --bg-2: #2e2d2a;
-  --card: #31302d;
-  --elevated: #3a3935;
-  --accent: #d97757;
-  --accent-soft: rgba(217, 119, 87, 0.16);
-  --positive: #9db880;
-  --negative: #e07a66;
-  --warning: #d9a662;
-  --text: #f5f4ef;
-  --text-2: #b5b1a5;
-  --muted: #87837a;
-  --border: #44433e;
-  --shadow: 0 8px 28px rgba(0, 0, 0, 0.42);
+[data-theme='light'] {
+  --bg: #eef2fa;
+  --bg-2: #e4eaf6;
+  --card: #ffffff;
+  --elevated: #f2f5fc;
+  --accent: #1e62d0;
+  --accent-soft: rgba(30, 98, 208, 0.1);
+  --positive: #1f8a4c;
+  --negative: #c93a3a;
+  --warning: #9a7316;
+  --text: #10182b;
+  --text-2: #4a5578;
+  --muted: #7b87a8;
+  --border: #d8e0f0;
+  --shadow: 0 8px 28px rgba(16, 24, 43, 0.1);
 }
 
 @theme inline {
@@ -61,10 +61,10 @@
   --color-border: var(--border);
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-display: 'Lora', 'Iowan Old Style', Georgia, ui-serif, serif;
+  --font-display: 'Rajdhani', 'Inter', ui-sans-serif, system-ui, sans-serif;
 
-  --radius-card: 16px;
-  --radius-control: 12px;
+  --radius-card: 12px;
+  --radius-control: 8px;
 }
 
 @layer base {
@@ -94,8 +94,8 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-weight: 700;
+    letter-spacing: 0.01em;
   }
 
   /* Numeric columns stay aligned. */
@@ -164,5 +164,5 @@
 }
 
 .recharts-default-tooltip {
-  border-radius: 12px !important;
+  border-radius: 8px !important;
 }

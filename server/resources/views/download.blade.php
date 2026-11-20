@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
 <meta name="description" content="Download MLBB Tracker for Android - live Mobile Legends meta analytics, recorded history and esports standings. Unofficial fan project.">
-<meta name="theme-color" content="#faf9f5">
+<meta name="theme-color" content="#0b1020">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MLBB Tracker">
@@ -14,17 +14,17 @@
 <title>Download MLBB Tracker</title>
 <style>
   :root {
-    --bg: #faf9f5; --bg-2: #f0eee6; --card: #ffffff; --border: #e5e1d8;
-    --text: #1f1e1d; --text-2: #57564f; --muted: #8a867a;
-    --accent: #c15f3c; --accent-soft: rgba(193,95,60,.12);
-    --ok: #5f7d42; --warn: #a87e2f;
+    --bg: #0b1020; --bg-2: #101830; --card: #141c36; --border: #26305a;
+    --text: #eaf0ff; --text-2: #a9b5d6; --muted: #6f7ca0;
+    --accent: #2e7cd6; --accent-soft: rgba(59,130,246,.16);
+    --ok: #3fcf8e; --warn: #e8c35a;
   }
-  @media (prefers-color-scheme: dark) {
+  @media (prefers-color-scheme: light) {
     :root {
-      --bg: #262624; --bg-2: #2e2d2a; --card: #31302d; --border: #44433e;
-      --text: #f5f4ef; --text-2: #b5b1a5; --muted: #87837a;
-      --accent: #d97757; --accent-soft: rgba(217,119,87,.16);
-      --ok: #9db880; --warn: #d9a662;
+      --bg: #eef2fa; --bg-2: #e4eaf6; --card: #ffffff; --border: #d8e0f0;
+      --text: #10182b; --text-2: #4a5578; --muted: #7b87a8;
+      --accent: #1e62d0; --accent-soft: rgba(30,98,208,.10);
+      --ok: #1f8a4c; --warn: #9a7316;
     }
   }
   * { box-sizing: border-box; }
@@ -33,14 +33,14 @@
     font: 16px/1.6 "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2 { font-family: "Lora", "Iowan Old Style", Georgia, serif; }
+  h1, h2 { font-family: "Rajdhani", "Inter", sans-serif; font-weight: 700; letter-spacing: .01em; }
   .wrap { max-width: 640px; margin: 0 auto; padding: 48px 20px 64px; }
   .hero { text-align: center; margin-bottom: 28px; }
   .logo {
-    width: 76px; height: 76px; border-radius: 20px; margin: 0 auto 16px;
-    background: linear-gradient(135deg, #d97757, #b85433);
+    width: 76px; height: 76px; border-radius: 18px; margin: 0 auto 16px;
+    background: linear-gradient(135deg, #38bdf8, #1e4fa8);
     display: grid; place-items: center;
-    box-shadow: 0 8px 28px rgba(201,100,66,.32);
+    box-shadow: 0 8px 28px rgba(46,124,214,.4);
   }
   .logo svg { width: 40px; height: 40px; }
   h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }

@@ -7,13 +7,13 @@
 <title>MLBB Tracker - web app not built yet</title>
 <style>
   :root {
-    --bg: #faf9f5; --card: #ffffff; --border: #e5e1d8;
-    --text: #1f1e1d; --text-2: #57564f; --muted: #8a867a; --accent: #c15f3c;
+    --bg: #0b1020; --card: #141c36; --border: #26305a;
+    --text: #eaf0ff; --text-2: #a9b5d6; --muted: #6f7ca0; --accent: #2e7cd6;
   }
-  @media (prefers-color-scheme: dark) {
+  @media (prefers-color-scheme: light) {
     :root {
-      --bg: #262624; --card: #31302d; --border: #44433e;
-      --text: #f5f4ef; --text-2: #b5b1a5; --muted: #87837a; --accent: #d97757;
+      --bg: #eef2fa; --card: #ffffff; --border: #d8e0f0;
+      --text: #10182b; --text-2: #4a5578; --muted: #7b87a8; --accent: #1e62d0;
     }
   }
   * { box-sizing: border-box; }

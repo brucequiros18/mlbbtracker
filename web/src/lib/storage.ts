@@ -62,8 +62,8 @@ export type Theme = 'dark' | 'light'
 export const theme = {
   get(): Theme {
     const raw = read(THEME_KEY)
-    // The parchment surface is the app's signature look.
-    return raw === 'dark' ? 'dark' : 'light'
+    // The midnight arena is the app's signature look.
+    return raw === 'light' ? 'light' : 'dark'
   },
   set(value: Theme): void {
     write(THEME_KEY, value)
