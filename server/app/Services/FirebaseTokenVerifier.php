@@ -161,9 +161,12 @@ class FirebaseTokenVerifier
     }
 
     /**
-     * The PEM public key for a key id, or null when Firebase does not know it.
+     * The public key for a key id, or null when Firebase does not know it.
+     *
+     * Firebase's certificate endpoint returns kid -> PEM certificate, so the
+     * extracted key is an OpenSSL key object rather than a PEM string.
      */
-    private function keyFor(string $keyId): ?string
+    private function keyFor(string $keyId): ?OpenSSLAsymmetricKey
     {
         $certs = $this->certs();
 
@@ -176,8 +179,8 @@ class FirebaseTokenVerifier
             return null;
         }
 
-        // The JWKS here is a map of kid -> PEM certificate. Extract the
-        // contained public key for openssl_verify.
+        // The map here is kid -> PEM certificate. Extract the contained
+        // public key for openssl_verify.
         $certificate = @openssl_x509_read((string) $certs[$keyId]);
 
         if ($certificate === false) {

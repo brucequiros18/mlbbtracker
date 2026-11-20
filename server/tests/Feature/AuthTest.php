@@ -35,6 +35,8 @@ class AuthTest extends TestCase
         config([
             'mlbb.google_client_id' => 'test-client.apps.googleusercontent.com',
             'mlbb.firebase_project_id' => 'test-firebase-project',
+            'mlbb.firebase_api_key' => 'test-api-key',
+            'mlbb.firebase_auth_domain' => '',
         ]);
     }
 
