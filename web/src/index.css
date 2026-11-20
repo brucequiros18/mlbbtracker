@@ -26,6 +26,14 @@
   --muted: #6f7ca0;
   --border: #26305a;
   --shadow: 0 8px 28px rgba(2, 6, 23, 0.55);
+
+  /* Wiki-backed meta tiers: gold S+, ember S, epic purple A, blue B. */
+  --tier-splus: #f5c542;
+  --tier-s: #fb923c;
+  --tier-a: #c084fc;
+  --tier-b: #60a5fa;
+  --tier-c: #94a3b8;
+  --tier-x: #94a3b8;
 }
 
 [data-theme='light'] {
@@ -43,6 +51,13 @@
   --muted: #7b87a8;
   --border: #d8e0f0;
   --shadow: 0 8px 28px rgba(16, 24, 43, 0.1);
+
+  --tier-splus: #a16207;
+  --tier-s: #c2410c;
+  --tier-a: #7c3aed;
+  --tier-b: #1d4ed8;
+  --tier-c: #64748b;
+  --tier-x: #64748b;
 }
 
 @theme inline {
@@ -59,6 +74,12 @@
   --color-text-2: var(--text-2);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-tier-splus: var(--tier-splus);
+  --color-tier-s: var(--tier-s);
+  --color-tier-a: var(--tier-a);
+  --color-tier-b: var(--tier-b);
+  --color-tier-c: var(--tier-c);
+  --color-tier-x: var(--tier-x);
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: 'Rajdhani', 'Inter', ui-sans-serif, system-ui, sans-serif;

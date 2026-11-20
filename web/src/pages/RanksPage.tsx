@@ -6,6 +6,7 @@ import { api } from '../lib/api'
 import { percent } from '../lib/format'
 import type { RankTier, RankWindow, SortField } from '../lib/types'
 import { HeroAvatar } from '../components/HeroAvatar'
+import { TierList } from '../components/TierList'
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews'
 
 const WINDOWS: RankWindow[] = ['1', '3', '7', '15', '30']
@@ -16,10 +17,13 @@ const SORTS: { value: SortField; label: string }[] = [
   { value: 'pick_rate', label: 'Pick rate' },
 ]
 
+type View = 'tiers' | 'table'
+
 export function RanksPage() {
   const [days, setDays] = useState<RankWindow>('7')
   const [rank, setRank] = useState<RankTier>('all')
   const [sort, setSort] = useState<SortField>('win_rate')
+  const [view, setView] = useState<View>('tiers')
 
   const rankings = useQuery({
     queryKey: ['heroes', 'rankings', { days, rank, sort }],
@@ -31,11 +35,33 @@ export function RanksPage() {
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="font-display text-2xl font-extrabold tracking-tight">Meta rankings</h1>
-        <p className="text-sm text-text-2">
-          Live win, ban and pick rates from the ranked provider
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-extrabold tracking-tight">Meta rankings</h1>
+          <p className="text-sm text-text-2">
+            Live win, ban and pick rates from the ranked provider
+          </p>
+        </div>
+        <div
+          className="flex rounded-control border border-border bg-card p-1"
+          role="tablist"
+          aria-label="Rankings view"
+        >
+          {(['tiers', 'table'] as View[]).map((entry) => (
+            <button
+              key={entry}
+              type="button"
+              role="tab"
+              aria-selected={view === entry}
+              onClick={() => setView(entry)}
+              className={`rounded-[6px] px-3 py-1.5 text-sm font-semibold capitalize transition ${
+                view === entry ? 'bg-accent text-white' : 'text-text-2 hover:text-text'
+              }`}
+            >
+              {entry === 'tiers' ? 'Tier list' : 'Table'}
+            </button>
+          ))}
+        </div>
       </header>
 
       <div className="space-y-2">
@@ -75,6 +101,8 @@ export function RanksPage() {
           title="No ranking data"
           message="The provider returned no hero statistics for this combination."
         />
+      ) : view === 'tiers' ? (
+        <TierList rows={rows} />
       ) : (
         <>
           {/* Desktop: a real table. Phones: cards, because a 4-column table
