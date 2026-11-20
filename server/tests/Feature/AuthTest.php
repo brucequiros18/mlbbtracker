@@ -132,6 +132,7 @@ class AuthTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.isNewUser', true)
             ->assertJsonPath('data.user.email', 'ash@example.com')
+            ->assertJsonPath('data.user.emailVerified', true)
             ->assertJsonPath('data.user.googleName', 'Ash')
             ->assertJsonPath('data.user.username', null)
             ->assertJsonPath('data.user.mlbbId', null)
@@ -206,6 +207,9 @@ class AuthTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.isNewUser', true)
             ->assertJsonPath('data.user.email', 'ash@example.com')
+            // Fresh email/password accounts are unverified until the player
+            // clicks Firebase's email link.
+            ->assertJsonPath('data.user.emailVerified', false)
             // Email/password accounts have no display name or picture.
             ->assertJsonPath('data.user.googleName', null)
             ->assertJsonPath('data.user.username', null)

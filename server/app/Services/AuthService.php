@@ -275,6 +275,7 @@ class AuthService
         return [
             'id' => $user->id,
             'email' => $user->email,
+            'emailVerified' => $user->email_verified,
             'googleName' => $user->google_name,
             'pictureUrl' => $user->picture_url,
             'username' => $user->username,

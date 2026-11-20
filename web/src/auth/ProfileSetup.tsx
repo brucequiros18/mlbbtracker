@@ -47,7 +47,7 @@ export function ProfileSetup() {
       <header>
         <h1 className="font-display text-2xl font-extrabold tracking-tight">Complete your profile</h1>
         <p className="text-sm text-text-2">
-          Signed in as {account?.email ?? 'your Google account'}. Three details are missing.
+          Signed in as {account?.email ?? 'your account'}. Three details are missing.
         </p>
       </header>
 

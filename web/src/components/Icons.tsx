@@ -174,3 +174,27 @@ export const TrendDownIcon = (props: IconProps) => (
     <path d="M15 19h6v-6" />
   </Icon>
 )
+
+export const MailIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="3" y="5.5" width="18" height="13" rx="2" />
+    <path d="m3.5 7 8.5 6 8.5-6" />
+  </Icon>
+)
+
+export const MailCheckIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M21 10.5V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7.5a2 2 0 0 1 2-2h9" />
+    <path d="m3.5 7 8.5 6 5-3.5" />
+    <path d="m15.5 18 2 2 4-4.5" />
+  </Icon>
+)
+
+export const MailWarningIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M21 10.5V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7.5a2 2 0 0 1 2-2h9" />
+    <path d="m3.5 7 8.5 6 5-3.5" />
+    <path d="M17.5 14v4" />
+    <path d="M17.5 20.5h.01" />
+  </Icon>
+)

@@ -98,6 +98,8 @@ export interface Standing {
 export interface Account {
   id: number
   email: string
+  /** Firebase email/password accounts start unverified; Google is always verified. */
+  emailVerified: boolean
   googleName: string | null
   pictureUrl: string | null
   username: string | null

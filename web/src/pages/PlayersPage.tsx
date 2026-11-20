@@ -5,6 +5,7 @@ import { api, ApiError } from '../lib/api'
 import { useAuth, useAuthMutations } from '../auth/AuthProvider'
 import { usePlayer } from '../players/PlayerProvider'
 import { EmailAuthForm } from '../auth/EmailAuthForm'
+import { EmailVerificationBanner } from '../auth/EmailVerificationBanner'
 import { GoogleButton } from '../auth/GoogleButton'
 import { ProfileSetup } from '../auth/ProfileSetup'
 import { AccountCard } from '../auth/AccountCard'
@@ -18,6 +19,7 @@ import { InfoIcon, LogoutIcon } from '../components/Icons'
 export function PlayersPage() {
   const auth = useAuth()
   const player = usePlayer()
+  const firebaseAuth = auth.config ? firebaseAuthFromConfig(auth.config) : null
 
   if (auth.status === 'loading') return <LoadingView message="Checking your session…" />
 
@@ -31,6 +33,10 @@ export function PlayersPage() {
         <h1 className="font-display text-2xl font-extrabold tracking-tight">Players</h1>
         <p className="text-sm text-text-2">Your account and your own tracked statistics</p>
       </header>
+
+      {auth.account && firebaseAuth ? (
+        <EmailVerificationBanner auth={firebaseAuth} account={auth.account} />
+      ) : null}
 
       {auth.account ? <AccountCard /> : null}
 

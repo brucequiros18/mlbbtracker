@@ -4,6 +4,8 @@ import {
   createUserWithEmailAndPassword,
   indexedDBLocalPersistence,
   initializeAuth,
+  sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   type Auth,
@@ -68,4 +70,28 @@ export async function firebaseSignIn(
 /** Forget the Firebase session locally (the app session is separate). */
 export async function firebaseSignOut(auth: Auth): Promise<void> {
   await signOut(auth)
+}
+
+/**
+ * Send a password-reset email.
+ *
+ * With Firebase's email-enumeration protection (on by default) this succeeds
+ * even when no account exists for the address, so callers should show one
+ * reassuring message either way instead of revealing which emails registered.
+ */
+export async function firebaseSendPasswordReset(auth: Auth, email: string): Promise<void> {
+  await sendPasswordResetEmail(auth, email.trim())
+}
+
+/**
+ * Send the verification email to the signed-in Firebase user.
+ *
+ * Returns false when there is no current Firebase user (e.g. a Google-only
+ * session) - nothing to verify in that case.
+ */
+export async function firebaseSendEmailVerification(auth: Auth): Promise<boolean> {
+  const user = auth.currentUser
+  if (!user) return false
+  await sendEmailVerification(user)
+  return true
 }
