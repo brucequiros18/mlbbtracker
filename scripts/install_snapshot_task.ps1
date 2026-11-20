@@ -5,9 +5,9 @@
 
 .DESCRIPTION
     The recorded-history chart in the app only grows if something records a
-    snapshot every day. This task runs `backend/scripts/record_snapshot.py`,
-    which is idempotent: one row per hero per UTC day, so a missed run or a
-    manual re-run can never duplicate data.
+    snapshot every day. This task runs the Laravel Artisan command
+    `php artisan mlbb:record-snapshot`, which is idempotent: one row per hero
+    per UTC day, so a missed run or a manual re-run can never duplicate data.
 
     The task runs as the current user, whether or not they are logged on
     (the password is never stored).
@@ -37,11 +37,10 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$backendDir = Join-Path $repoRoot 'backend'
-$python = Join-Path $backendDir '.venv\Scripts\python.exe'
-$script = Join-Path $backendDir 'scripts\record_snapshot.py'
+$serverDir = Join-Path $repoRoot 'server'
+$php = 'php' # resolved from PATH
 $taskName = 'MLBB Tracker - Daily Snapshot'
-$logFile = Join-Path $backendDir 'snapshot_task.log'
+$logFile = Join-Path $serverDir 'storage\logs\snapshot_task.log'
 
 function Remove-SnapshotTask {
     if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
@@ -58,20 +57,18 @@ if ($Uninstall) {
 }
 
 # - Preconditions ------------------------------------------------
-if (-not (Test-Path $python)) {
-    throw "Python venv not found at $python. Create it first: cd backend; py -m venv .venv"
-}
-if (-not (Test-Path $script)) {
-    throw "Snapshot script not found at $script."
+if (-not (Test-Path (Join-Path $serverDir 'artisan'))) {
+    throw "Laravel app not found at $serverDir."
 }
 
 $parsed = [datetime]::ParseExact($Time, 'HH:mm', $null)
 $trigger = New-ScheduledTaskTrigger -Daily -At $parsed
 
+$argument = "/c cd /d `"$serverDir`" && php artisan mlbb:record-snapshot >> `"$logFile`" 2>&1"
 $action = New-ScheduledTaskAction `
-    -Execute $python `
-    -Argument "scripts\record_snapshot.py" `
-    -WorkingDirectory $backendDir
+    -Execute 'cmd.exe' `
+    -Argument $argument `
+    -WorkingDirectory $serverDir
 
 # Run whether or not the user is logged on; never store a password.
 $principal = New-ScheduledTaskPrincipal `
@@ -102,22 +99,16 @@ Register-ScheduledTask `
 
 Write-Host "Installed scheduled task '$taskName'."
 Write-Host "  Runs daily at : $Time (local time)"
-Write-Host "  Command       : $python scripts\record_snapshot.py"
-Write-Host "  Working dir   : $backendDir"
+Write-Host "  Command       : php artisan mlbb:record-snapshot"
+Write-Host "  Working dir   : $serverDir"
 
 # - Optionally run it once now, so the first snapshot exists immediately ----
 if ($RunNow) {
-    Push-Location $backendDir
+    Push-Location $serverDir
     try {
-        # The snapshot script logs to stderr; keep that from being treated as
-        # a terminating error and judge success by the exit code instead.
-        $previousPreference = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        & $python 'scripts\record_snapshot.py'
-        $exitCode = $LASTEXITCODE
-        $ErrorActionPreference = $previousPreference
-        if ($exitCode -ne 0) {
-            Write-Warning "The snapshot script exited with code $exitCode."
+        & php artisan mlbb:record-snapshot
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "The snapshot command exited with code $LASTEXITCODE."
         }
     } finally {
         Pop-Location
