@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\AuthService;
+use App\Services\FirebaseTokenVerifier;
 use App\Services\GoogleTokenVerifier;
 use App\Services\ProviderHealthRecorder;
 use Illuminate\Support\ServiceProvider;
@@ -16,8 +17,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ProviderHealthRecorder::class);
 
-        // The verifier needs the OAuth client ID, which may legitimately be
-        // empty on a fresh checkout. It is only resolvable when configured.
+        // The verifiers need their credentials (OAuth client ID / Firebase
+        // project ID), which may legitimately be empty on a fresh checkout.
+        // They are only resolvable when configured.
         $this->app->bind(GoogleTokenVerifier::class, function (): GoogleTokenVerifier {
             $clientId = (string) config('mlbb.google_client_id');
 
@@ -30,17 +32,34 @@ class AppServiceProvider extends ServiceProvider
             return new GoogleTokenVerifier($clientId);
         });
 
-        // AuthService takes an optional verifier: with no client ID configured
+        $this->app->bind(FirebaseTokenVerifier::class, function (): FirebaseTokenVerifier {
+            $projectId = (string) config('mlbb.firebase_project_id');
+
+            if ($projectId === '') {
+                throw new \RuntimeException(
+                    'Firebase sign-in is not configured. Set MLBB_FIREBASE_PROJECT_ID.'
+                );
+            }
+
+            return new FirebaseTokenVerifier($projectId);
+        });
+
+        // AuthService takes optional verifiers: with no credentials configured
         // it reports the honest "not configured" state instead of failing to
         // resolve.
         $this->app->bind(AuthService::class, function ($app): AuthService {
             $clientId = (string) config('mlbb.google_client_id');
+            $projectId = (string) config('mlbb.firebase_project_id');
 
-            $verifier = $clientId === ''
+            $googleVerifier = $clientId === ''
                 ? null
                 : $app->make(GoogleTokenVerifier::class);
 
-            return new AuthService($verifier);
+            $firebaseVerifier = $projectId === ''
+                ? null
+                : $app->make(FirebaseTokenVerifier::class);
+
+            return new AuthService($googleVerifier, $firebaseVerifier);
         });
     }
 

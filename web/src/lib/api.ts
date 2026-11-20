@@ -171,6 +171,12 @@ export const api = {
   auth: {
     config: (signal?: AbortSignal) => request<AuthConfig>('/auth/config', { signal }),
 
+    signInWithFirebase: (idToken: string) =>
+      request<GoogleSignInResult>('/auth/firebase', {
+        method: 'POST',
+        body: { idToken },
+      }),
+
     signInWithGoogle: (credential: string) =>
       request<GoogleSignInResult>('/auth/google', {
         method: 'POST',

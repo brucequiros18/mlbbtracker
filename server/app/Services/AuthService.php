@@ -9,14 +9,15 @@ use App\Support\Passwords;
 use Illuminate\Support\Facades\Log;
 
 /**
- * App accounts: Google sign-in, profile setup and sessions.
+ * App accounts: Google or Firebase sign-in, profile setup and sessions.
  *
- * Google is the **only** credential. Everything else is app-only profile data:
+ * Sign-in credentials are **verified ID tokens only** (Google or Firebase) -
+ * everything else is app-only profile data:
  *
  * - `username` - chosen by the player, unique (case-insensitive);
  * - `mlbb_id` - self-declared and never verified against Moonton;
- * - `password` - stored as a salted hash, never sent to Moonton, never used to
- *   sign in; it only confirms changes to the profile.
+ * - `password` - stored as an Argon2id hash, never sent to Moonton, never
+ *   used to sign in; it only confirms changes to the profile.
  *
  * Sessions are opaque bearer tokens; only their SHA-256 digest is stored.
  */
@@ -24,17 +25,27 @@ class AuthService
 {
     private const GOOGLE_NOT_CONFIGURED = 'Google sign-in is not configured on this server yet. Set MLBB_GOOGLE_CLIENT_ID to the OAuth 2.0 web client ID.';
 
-    private const SESSION_EXPIRED = 'Your session has expired. Please sign in with Google again.';
+    private const FIREBASE_NOT_CONFIGURED = 'Firebase sign-in is not configured on this server yet. Set MLBB_FIREBASE_PROJECT_ID to the Firebase project ID.';
+
+    private const SESSION_EXPIRED = 'Your session has expired. Please sign in again.';
 
     public const USERNAME_PATTERN = '/^[A-Za-z0-9_]{3,24}$/';
 
     public const MLBB_ID_PATTERN = '/^\d{4,20}$/';
 
-    public function __construct(private readonly ?GoogleTokenVerifier $verifier) {}
+    public function __construct(
+        private readonly ?GoogleTokenVerifier $verifier,
+        private readonly ?FirebaseTokenVerifier $firebaseVerifier = null,
+    ) {}
 
     public function googleEnabled(): bool
     {
         return $this->verifier !== null;
+    }
+
+    public function firebaseEnabled(): bool
+    {
+        return $this->firebaseVerifier !== null;
     }
 
     /**
@@ -71,6 +82,50 @@ class AuthService
             ])->save();
         }
 
+        return $this->startSession($user, $isNewUser, 'google');
+    }
+
+    /**
+     * Verify a Firebase ID token (email + password sign-in), then create an
+     * app session for it. The Firebase UID (`sub`) is the account key.
+     *
+     * @return array{sessionToken: string, user: array<string, mixed>, isNewUser: bool}
+     */
+    public function signInWithFirebase(string $idToken): array
+    {
+        if ($this->firebaseVerifier === null) {
+            throw ApiException::googleNotConfigured(self::FIREBASE_NOT_CONFIGURED);
+        }
+
+        $identity = $this->firebaseVerifier->verify($idToken);
+        $user = User::query()->where('firebase_uid', $identity['subject'])->first();
+        $isNewUser = $user === null;
+
+        if ($user === null) {
+            $user = User::query()->create([
+                'firebase_uid' => $identity['subject'],
+                'email' => $identity['email'],
+                'email_verified' => $identity['email_verified'],
+                'last_login_at' => now(),
+            ]);
+        } else {
+            $user->forceFill([
+                'email' => $identity['email'],
+                'email_verified' => $identity['email_verified'],
+                'last_login_at' => now(),
+            ])->save();
+        }
+
+        return $this->startSession($user, $isNewUser, 'firebase');
+    }
+
+    /**
+     * Issue a new opaque session token for the account.
+     *
+     * @return array{sessionToken: string, user: array<string, mixed>, isNewUser: bool}
+     */
+    private function startSession(User $user, bool $isNewUser, string $method): array
+    {
         $token = $this->generateSessionToken();
 
         UserSession::query()->create([
@@ -80,7 +135,7 @@ class AuthService
             'last_seen_at' => now(),
         ]);
 
-        Log::info("google sign-in: user={$user->id} new={$isNewUser}");
+        Log::info("{$method} sign-in: user={$user->id} new={$isNewUser}");
 
         return [
             'sessionToken' => $token,
@@ -90,7 +145,7 @@ class AuthService
     }
 
     /**
-     * Complete the profile of a freshly signed-in Google account.
+     * Complete the profile of a freshly signed-in account.
      *
      * @return array<string, mixed>
      */

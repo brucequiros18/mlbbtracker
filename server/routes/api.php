@@ -52,6 +52,7 @@ Route::prefix('v1')->group(function (): void {
 
     Route::prefix('auth')->group(function (): void {
         Route::get('config', [AuthController::class, 'config']);
+        Route::post('firebase', [AuthController::class, 'firebase']);
         Route::post('google', [AuthController::class, 'google']);
         Route::post('register', [AuthController::class, 'register']);
         Route::get('me', [AuthController::class, 'me']);

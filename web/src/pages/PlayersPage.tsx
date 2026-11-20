@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { api, ApiError } from '../lib/api'
 import { useAuth, useAuthMutations } from '../auth/AuthProvider'
 import { usePlayer } from '../players/PlayerProvider'
+import { EmailAuthForm } from '../auth/EmailAuthForm'
 import { GoogleButton } from '../auth/GoogleButton'
 import { ProfileSetup } from '../auth/ProfileSetup'
 import { AccountCard } from '../auth/AccountCard'
+import { firebaseAuthFromConfig } from '../lib/firebase'
 import { count, percent } from '../lib/format'
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews'
 import { StatTile } from '../components/StatTile'
@@ -42,25 +44,31 @@ function SignInPanel() {
   const { signIn } = useAuthMutations()
   const [error, setError] = useState<string | null>(null)
 
-  const handleCredential = (credential: string) => {
+  const handleIdToken = (idToken: string) => {
     setError(null)
-    signIn.mutate(credential, {
+    signIn.mutate(idToken, {
       onError: (mutationError) => {
         setError(
           mutationError instanceof Error
             ? mutationError.message
-            : 'Google sign-in could not be completed.',
+            : 'Sign-in could not be completed.',
         )
       },
     })
   }
+
+  const firebaseReady = Boolean(
+    config?.firebaseEnabled && config.firebaseApiKey && config.firebaseProjectId,
+  )
+  const googleReady = Boolean(config?.googleSignInEnabled && config.googleClientId)
+  const anyMethod = firebaseReady || googleReady
 
   return (
     <div className="mx-auto max-w-md space-y-5 py-6">
       <header className="text-center">
         <h1 className="font-display text-2xl font-extrabold tracking-tight">Sign in</h1>
         <p className="text-sm text-text-2">
-          Google is the only sign-in method MLBB Tracker accepts.
+          Sign in or create an account with your email.
         </p>
       </header>
 
@@ -71,13 +79,51 @@ function SignInPanel() {
           </p>
         ) : !config ? (
           <LoadingView message="Checking the sign-in configuration…" />
-        ) : config.googleSignInEnabled && config.googleClientId ? (
+        ) : !anyMethod ? (
+          <div className="flex items-start gap-3">
+            <InfoIcon size={20} className="mt-0.5 shrink-0 text-warning" />
+            <div>
+              <p className="text-sm font-semibold">Sign-in is not configured yet</p>
+              <p className="mt-1 text-sm text-text-2">
+                This server has no Firebase project or OAuth client ID, so no
+                sign-in method can work. The maintainer sets{' '}
+                <code className="text-xs">MLBB_FIREBASE_PROJECT_ID</code> (or{' '}
+                <code className="text-xs">MLBB_GOOGLE_CLIENT_ID</code>) to enable
+                one.
+              </p>
+            </div>
+          </div>
+        ) : (
           <>
-            <GoogleButton
-              clientId={config.googleClientId}
-              onCredential={handleCredential}
-              disabled={signIn.isPending}
-            />
+            {firebaseReady && config.firebaseApiKey && config.firebaseProjectId ? (
+              <EmailAuthForm
+                auth={firebaseAuthFromConfig(config)!}
+                onIdToken={handleIdToken}
+                disabled={signIn.isPending}
+              />
+            ) : null}
+
+            {firebaseReady && googleReady ? (
+              <div className="my-4 flex items-center gap-3" aria-hidden>
+                <span className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted">or</span>
+                <span className="h-px flex-1 bg-border" />
+              </div>
+            ) : null}
+
+            {googleReady && config.googleClientId ? (
+              <>
+                <GoogleButton
+                  clientId={config.googleClientId}
+                  onCredential={handleIdToken}
+                  disabled={signIn.isPending}
+                />
+                <p className="mt-2 text-center text-xs text-muted">
+                  Google sign-in is also available.
+                </p>
+              </>
+            ) : null}
+
             {signIn.isPending ? (
               <p className="mt-3 text-center text-sm text-muted">Signing in…</p>
             ) : null}
@@ -87,23 +133,11 @@ function SignInPanel() {
               </p>
             ) : null}
           </>
-        ) : (
-          <div className="flex items-start gap-3">
-            <InfoIcon size={20} className="mt-0.5 shrink-0 text-warning" />
-            <div>
-              <p className="text-sm font-semibold">Google sign-in is not configured yet</p>
-              <p className="mt-1 text-sm text-text-2">
-                This server has no OAuth client ID, so no sign-in button can work. The
-                maintainer sets <code className="text-xs">MLBB_GOOGLE_CLIENT_ID</code> to
-                enable it.
-              </p>
-            </div>
-          </div>
         )}
       </div>
 
       <p className="text-xs text-muted">
-        Your Google account is the only credential. The app password you choose later never
+        Your email is the sign-in credential. The app password you choose later never
         signs you in — it only confirms changes to your profile.
       </p>
     </div>

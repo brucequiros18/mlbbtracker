@@ -112,6 +112,11 @@ export interface Account {
 export interface AuthConfig {
   googleSignInEnabled: boolean
   googleClientId: string | null
+  /** Firebase email + password sign-in. Both values are public. */
+  firebaseEnabled: boolean
+  firebaseApiKey: string | null
+  firebaseAuthDomain: string | null
+  firebaseProjectId: string | null
   minPasswordLength: number
   maxPasswordLength: number
   usernamePattern: string

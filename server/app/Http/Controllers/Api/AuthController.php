@@ -14,20 +14,24 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Account endpoints - Google-only sign-in.
+ * Account endpoints - sign-in with verified ID tokens (Firebase or Google).
  *
- * 1. GET   /auth/config    is Google sign-in configured? which client ID?
- * 2. POST  /auth/google    {credential} from Google Identity Services
+ * 1. GET   /auth/config    which sign-in methods are configured? client IDs
+ *                          and the public Firebase web config
+ * 2. POST  /auth/firebase  {idToken} from the Firebase JS SDK
+ *                          (email + password sign-up/sign-in)
  *                          -> app session token + account
- * 3. POST  /auth/register  complete the profile: username, MLBB ID and the
+ * 3. POST  /auth/google    {credential} from Google Identity Services
+ *                          -> app session token + account
+ * 4. POST  /auth/register  complete the profile: username, MLBB ID and the
  *                          app password (needs the session token)
- * 4. GET   /auth/me        the signed-in account
- * 5. PATCH /auth/me        change the profile (confirmed by the app password)
- * 6. POST  /auth/logout    forget the session
+ * 5. GET   /auth/me        the signed-in account
+ * 6. PATCH /auth/me        change the profile (confirmed by the app password)
+ * 7. POST  /auth/logout    forget the session
  *
- * Google is the only credential. The MLBB ID is **self-declared**: it is
- * stored as typed, never checked against Moonton, and the API says so on
- * every response.
+ * Sign-in tokens are verified server-side; the browser never decides who the
+ * player is. The MLBB ID is **self-declared**: it is stored as typed, never
+ * checked against Moonton, and the API says so on every response.
  */
 class AuthController extends Controller
 {
@@ -36,20 +40,44 @@ class AuthController extends Controller
     public function config(AuthService $auth): JsonResponse
     {
         $clientId = (string) config('mlbb.google_client_id');
-        $enabled = $clientId !== '';
+        $googleEnabled = $clientId !== '';
+        $projectId = (string) config('mlbb.firebase_project_id');
+        $apiKey = (string) config('mlbb.firebase_api_key');
+        $firebaseEnabled = $projectId !== '';
 
         return response()->json(ApiEnvelope::item([
-            'googleSignInEnabled' => $enabled,
-            'googleClientId' => $enabled ? $clientId : null,
+            'googleSignInEnabled' => $googleEnabled,
+            'googleClientId' => $googleEnabled ? $clientId : null,
+            'firebaseEnabled' => $firebaseEnabled,
+            // The web API key and auth domain are public values: they ship in
+            // every Firebase web app config and are required by the JS SDK.
+            'firebaseApiKey' => $firebaseEnabled && $apiKey !== '' ? $apiKey : null,
+            'firebaseAuthDomain' => $firebaseEnabled
+                ? ((string) config('mlbb.firebase_auth_domain') !== ''
+                    ? (string) config('mlbb.firebase_auth_domain')
+                    : $projectId.'.firebaseapp.com')
+                : null,
+            'firebaseProjectId' => $firebaseEnabled ? $projectId : null,
             'minPasswordLength' => Passwords::MIN_LENGTH,
             'maxPasswordLength' => Passwords::MAX_LENGTH,
             'usernamePattern' => '^[A-Za-z0-9_]{3,24}$',
             'mlbbIdPattern' => '^\d{4,20}$',
         ], [
-            'note' => $enabled
-                ? 'Google is the only sign-in method.'
-                : 'Google sign-in is not configured on this server.',
+            'note' => $firebaseEnabled || $googleEnabled
+                ? 'Sign-in is a verified ID token: Firebase (email + password) or Google.'
+                : 'No sign-in method is configured on this server.',
         ]));
+    }
+
+    public function firebase(Request $request, AuthService $auth): JsonResponse
+    {
+        $validated = $request->validate([
+            'idToken' => ['required', 'string', 'min:20', 'max:8192'],
+        ]);
+
+        $result = $auth->signInWithFirebase((string) $validated['idToken']);
+
+        return response()->json(ApiEnvelope::item($result));
     }
 
     public function google(GoogleSignInRequest $request, AuthService $auth): JsonResponse

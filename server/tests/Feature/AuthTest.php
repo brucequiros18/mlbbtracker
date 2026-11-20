@@ -8,14 +8,15 @@ use App\Services\AuthService;
 use App\Support\Passwords;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Fakes\FakeFirebaseTokenVerifier;
 use Tests\Fakes\FakeGoogleTokenVerifier;
 use Tests\TestCase;
 
 /**
- * App accounts: Google-only sign-in, profile setup and sessions.
+ * App accounts: Google or Firebase sign-in, profile setup and sessions.
  *
- * Everything here is offline: the Google verifier is faked, so no token is
- * ever sent to Google.
+ * Everything here is offline: the verifiers are faked, so no token is ever
+ * sent to Google or Firebase.
  */
 class AuthTest extends TestCase
 {
@@ -24,11 +25,17 @@ class AuthTest extends TestCase
     // Must satisfy the GoogleSignInRequest rule: credential min:20.
     private const GOOD_TOKEN = 'good-google-token-0123456789abcdef';
 
+    // Must satisfy the Firebase idToken rule: min:20.
+    private const GOOD_FIREBASE_TOKEN = 'good-firebase-token-0123456789abcdef';
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        config(['mlbb.google_client_id' => 'test-client.apps.googleusercontent.com']);
+        config([
+            'mlbb.google_client_id' => 'test-client.apps.googleusercontent.com',
+            'mlbb.firebase_project_id' => 'test-firebase-project',
+        ]);
     }
 
     private function useFakeVerifier(): FakeGoogleTokenVerifier
@@ -38,6 +45,26 @@ class AuthTest extends TestCase
         $this->app->bind(AuthService::class, fn () => new AuthService($verifier));
 
         return $verifier;
+    }
+
+    private function useFakeFirebaseVerifier(): FakeFirebaseTokenVerifier
+    {
+        $verifier = new FakeFirebaseTokenVerifier(self::GOOD_FIREBASE_TOKEN);
+
+        $this->app->bind(AuthService::class, fn () => new AuthService(null, $verifier));
+
+        return $verifier;
+    }
+
+    private function firebaseSignIn(): string
+    {
+        $response = $this->postJson('/api/v1/auth/firebase', [
+            'idToken' => self::GOOD_FIREBASE_TOKEN,
+        ]);
+
+        $response->assertOk();
+
+        return (string) $response->json('data.sessionToken');
     }
 
     private function signIn(): string
@@ -138,6 +165,104 @@ class AuthTest extends TestCase
             ->assertJsonPath('code', 'GOOGLE_TOKEN_INVALID');
 
         $this->assertSame(0, User::query()->count());
+    }
+
+    // -- Firebase sign-in (email + password) ---------------------------------
+
+    public function test_config_reports_firebase_enabled(): void
+    {
+        $this->useFakeFirebaseVerifier();
+
+        $this->getJson('/api/v1/auth/config')
+            ->assertOk()
+            ->assertJsonPath('data.firebaseEnabled', true)
+            ->assertJsonPath('data.firebaseProjectId', 'test-firebase-project')
+            ->assertJsonPath('data.firebaseAuthDomain', 'test-firebase-project.firebaseapp.com');
+    }
+
+    public function test_config_reports_firebase_disabled_when_unconfigured(): void
+    {
+        config(['mlbb.firebase_project_id' => '']);
+        $this->useFakeVerifier();
+
+        $this->getJson('/api/v1/auth/config')
+            ->assertOk()
+            ->assertJsonPath('data.firebaseEnabled', false)
+            ->assertJsonPath('data.firebaseApiKey', null);
+
+        $this->postJson('/api/v1/auth/firebase', ['idToken' => self::GOOD_FIREBASE_TOKEN])
+            ->assertStatus(503)
+            ->assertJsonPath('code', 'GOOGLE_NOT_CONFIGURED');
+    }
+
+    public function test_firebase_sign_up_creates_an_account_without_a_profile(): void
+    {
+        $this->useFakeFirebaseVerifier();
+
+        $response = $this->postJson('/api/v1/auth/firebase', ['idToken' => self::GOOD_FIREBASE_TOKEN]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.isNewUser', true)
+            ->assertJsonPath('data.user.email', 'ash@example.com')
+            // Email/password accounts have no display name or picture.
+            ->assertJsonPath('data.user.googleName', null)
+            ->assertJsonPath('data.user.username', null)
+            ->assertJsonPath('data.user.mlbbId', null)
+            ->assertJsonPath('data.user.profileComplete', false)
+            // Never verified: the MLBB ID is typed in by the player.
+            ->assertJsonPath('data.user.mlbbIdVerified', false);
+
+        $this->assertNotEmpty($response->json('data.sessionToken'));
+
+        $user = User::query()->firstOrFail();
+        $this->assertSame('firebase-uid-1', $user->firebase_uid);
+        $this->assertNull($user->google_sub);
+    }
+
+    public function test_firebase_sign_in_twice_reuses_the_account(): void
+    {
+        $this->useFakeFirebaseVerifier();
+
+        $first = $this->postJson('/api/v1/auth/firebase', ['idToken' => self::GOOD_FIREBASE_TOKEN]);
+        $second = $this->postJson('/api/v1/auth/firebase', ['idToken' => self::GOOD_FIREBASE_TOKEN]);
+
+        $first->assertJsonPath('data.isNewUser', true);
+        $second->assertJsonPath('data.isNewUser', false);
+        $this->assertSame($first->json('data.user.id'), $second->json('data.user.id'));
+        $this->assertNotSame($first->json('data.sessionToken'), $second->json('data.sessionToken'));
+
+        $this->assertSame(1, User::query()->count());
+        $this->assertSame(2, UserSession::query()->count());
+    }
+
+    public function test_firebase_sign_in_rejects_an_invalid_token(): void
+    {
+        $this->useFakeFirebaseVerifier();
+
+        $this->postJson('/api/v1/auth/firebase', ['idToken' => 'bad-firebase-token-0123456789abcdef'])
+            ->assertStatus(401)
+            ->assertJsonPath('code', 'GOOGLE_TOKEN_INVALID');
+
+        $this->assertSame(0, User::query()->count());
+    }
+
+    public function test_firebase_account_completes_the_profile(): void
+    {
+        $this->useFakeFirebaseVerifier();
+
+        $token = $this->firebaseSignIn();
+
+        $this->register($token)
+            ->assertOk()
+            ->assertJsonPath('data.username', 'AshKetchum')
+            ->assertJsonPath('data.mlbbId', '123456789')
+            ->assertJsonPath('data.profileComplete', true);
+
+        // The Firebase account and the app password coexist: Firebase is the
+        // sign-in credential, the app password confirms profile edits.
+        $user = User::query()->firstOrFail();
+        $this->assertNotNull($user->password_hash);
+        $this->assertTrue(Passwords::verify('correct horse battery', $user->password_hash));
     }
 
     // -- Registration --------------------------------------------------------

@@ -10,15 +10,17 @@ import {
 } from 'react'
 
 import { api, ApiError } from '../lib/api'
+import { firebaseAuthFromConfig, firebaseSignOut } from '../lib/firebase'
 import { accountToken } from '../lib/storage'
 import type { Account, AuthConfig } from '../lib/types'
 
 /**
  * App accounts.
  *
- * Google is the **only** credential: the session token here comes from a
- * verified Google ID token. The username, MLBB ID and app password are
- * profile data - the MLBB ID is self-declared and never verified.
+ * Sign-in is a **verified ID token**: Firebase (email + password) or Google.
+ * The session token here comes from the Laravel server after it verified the
+ * ID token locally. The username, MLBB ID and app password are profile data -
+ * the MLBB ID is self-declared and never verified.
  */
 interface AuthContextValue {
   account: Account | null
@@ -26,6 +28,7 @@ interface AuthContextValue {
   status: 'loading' | 'signed-out' | 'signed-in'
   config: AuthConfig | null
   configError: ApiError | null
+  signInWithFirebase: (idToken: string) => Promise<Account>
   signInWithGoogle: (credential: string) => Promise<Account>
   register: (profile: { username: string; mlbbId: string; password: string }) => Promise<Account>
   updateProfile: (profile: {
@@ -94,8 +97,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token, accountQuery.isPending, accountQuery.data, accountQuery.error])
 
-  const signInWithGoogle = useCallback(async (credential: string) => {
-    const result = await api.auth.signInWithGoogle(credential)
+  const exchangeSession = useCallback(async (
+    method: 'firebase' | 'google',
+    idToken: string,
+  ): Promise<Account> => {
+    const result = method === 'firebase'
+      ? await api.auth.signInWithFirebase(idToken)
+      : await api.auth.signInWithGoogle(idToken)
     accountToken.set(result.sessionToken)
     setToken(result.sessionToken)
     setAccount(result.user)
@@ -103,6 +111,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: ['auth'] })
     return result.user
   }, [queryClient])
+
+  const signInWithFirebase = useCallback(
+    (idToken: string) => exchangeSession('firebase', idToken),
+    [exchangeSession],
+  )
+
+  const signInWithGoogle = useCallback(
+    (credential: string) => exchangeSession('google', credential),
+    [exchangeSession],
+  )
 
   const register = useCallback(
     async (profile: { username: string; mlbbId: string; password: string }) => {
@@ -145,7 +163,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // The local session is already gone; a failed server call is fine.
       }
     }
-  }, [token, queryClient])
+    // Also forget the underlying Firebase session, if one exists.
+    if (configQuery.data) {
+      const firebaseAuth = firebaseAuthFromConfig(configQuery.data)
+      if (firebaseAuth) {
+        try {
+          await firebaseSignOut(firebaseAuth)
+        } catch {
+          // Already signed out of Firebase; nothing to recover.
+        }
+      }
+    }
+  }, [token, queryClient, configQuery.data])
 
   const refresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['auth'] })
@@ -158,6 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status,
       config: configQuery.data ?? null,
       configError: configQuery.error instanceof ApiError ? configQuery.error : null,
+      signInWithFirebase,
       signInWithGoogle,
       register,
       updateProfile,
@@ -170,6 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status,
       configQuery.data,
       configQuery.error,
+      signInWithFirebase,
       signInWithGoogle,
       register,
       updateProfile,
@@ -193,7 +224,7 @@ export function useAuthMutations() {
   const queryClient = useQueryClient()
 
   const signIn = useMutation({
-    mutationFn: (credential: string) => auth.signInWithGoogle(credential),
+    mutationFn: (idToken: string) => auth.signInWithFirebase(idToken),
   })
 
   const createProfile = useMutation({

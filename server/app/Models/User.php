@@ -7,17 +7,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * An app account, created by signing in with Google.
+ * An app account, created by signing in with Google or Firebase.
  *
- * Google is the only credential. `google_sub` is the stable subject of a
- * verified Google ID token, so it is the identity key - never the email.
+ * A row carries whichever credential created it: `google_sub` (the stable
+ * subject of a verified Google ID token) or `firebase_uid` (the stable UID of
+ * a verified Firebase ID token). Either way that subject - never the email -
+ * is the identity key.
  *
  * `username`, `mlbb_id` and `password_hash` are app-only profile data:
  *
  * - the MLBB ID is self-declared and never verified against Moonton;
- * - the password is a salted hash that never leaves this database. It is not
- *   a sign-in method and is never sent to Moonton - it only confirms changes
- *   to the profile (see PATCH /api/v1/auth/me).
+ * - the password is a salted Argon2id hash that never leaves this database.
+ *   It is not a sign-in method and is never sent to Moonton - it only
+ *   confirms changes to the profile (see PATCH /api/v1/auth/me).
  */
 class User extends Model
 {
@@ -29,6 +31,7 @@ class User extends Model
      */
     protected $fillable = [
         'google_sub',
+        'firebase_uid',
         'email',
         'email_verified',
         'google_name',

@@ -30,12 +30,21 @@ return [
     'cache_ttl_detail' => (int) env('MLBB_CACHE_TTL_DETAIL', 6 * 60 * 60),
     'cache_ttl_health' => (int) env('MLBB_CACHE_TTL_HEALTH', 60),
 
-    // Google sign-in - the app's only credential. The value is the OAuth 2.0
-    // *web* client ID from Google Cloud Console; it is public (it ships to the
-    // browser), so the API exposes it via GET /api/v1/auth/config.
-    // Empty = not configured: sign-in answers 503 GOOGLE_NOT_CONFIGURED and
-    // the app shows that state instead of a button that cannot work.
+    // Google sign-in - one of the accepted credentials. The value is the
+    // OAuth 2.0 *web* client ID from Google Cloud Console; it is public (it
+    // ships to the browser), so the API exposes it via GET /api/v1/auth/config.
+    // Empty = not configured: the app shows an honest "not configured" state
+    // instead of a button that cannot work.
     'google_client_id' => env('MLBB_GOOGLE_CLIENT_ID', ''),
+
+    // Firebase sign-in (email + password). The project ID and web API key are
+    // both public values (they ship in every Firebase web app config). The
+    // API key is needed client-side by the Firebase JS SDK; the project ID is
+    // what the backend checks the ID token's issuer/audience against.
+    // Empty project ID = Firebase sign-in not configured.
+    'firebase_project_id' => env('MLBB_FIREBASE_PROJECT_ID', ''),
+    'firebase_api_key' => env('MLBB_FIREBASE_API_KEY', ''),
+    'firebase_auth_domain' => env('MLBB_FIREBASE_AUTH_DOMAIN', ''),
 
     // How long an app account session stays valid (sliding, refreshed on use).
     'user_session_ttl_days' => (int) env('MLBB_USER_SESSION_TTL_DAYS', 30),

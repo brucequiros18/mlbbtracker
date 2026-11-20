@@ -87,8 +87,8 @@ export function ProfileSetup() {
           <InfoIcon size={16} className="mt-0.5 shrink-0 text-muted" />
           <p className="text-xs text-text-2">
             Your MLBB ID is self-declared - it is never verified against Moonton. The app
-            password is only a confirmation for profile edits; Google remains your sign-in
-            method.
+            password is only a confirmation for profile edits; your email login remains
+            your sign-in method.
           </p>
         </div>
 
