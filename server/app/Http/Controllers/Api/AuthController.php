@@ -60,7 +60,7 @@ class AuthController extends Controller
             'firebaseProjectId' => $firebaseEnabled ? $projectId : null,
             'minPasswordLength' => Passwords::MIN_LENGTH,
             'maxPasswordLength' => Passwords::MAX_LENGTH,
-            'usernamePattern' => '^[A-Za-z0-9_]{3,24}$',
+            'usernamePattern' => '^[A-Za-z0-9_][A-Za-z0-9_. ]{1,22}[A-Za-z0-9_.]$',
             'mlbbIdPattern' => '^\d{4,20}$',
         ], [
             'note' => $firebaseEnabled || $googleEnabled

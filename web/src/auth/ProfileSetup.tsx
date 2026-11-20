@@ -56,7 +56,7 @@ export function ProfileSetup() {
           label="Username"
           value={username}
           onChange={setUsername}
-          placeholder="3-24 letters, numbers or _"
+          placeholder="3-24 letters, numbers, _ or spaces"
           autoComplete="username"
         />
         <Field

@@ -37,11 +37,18 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
+            $errors = $exception->errors();
+
+            // Surface the first field error as the message so the app shows
+            // "Use 3-24 letters, numbers, underscores, spaces or dots..."
+            // instead of a generic "Request validation failed.".
+            $firstMessage = collect($errors)->flatten()->first() ?? 'Request validation failed.';
+
             return response()->json([
                 'status' => 'error',
                 'code' => 'VALIDATION_ERROR',
-                'message' => 'Request validation failed.',
-                'details' => json_encode($exception->errors()),
+                'message' => $firstMessage,
+                'details' => json_encode($errors),
                 'timestamp' => now()->utc()->format('Y-m-d\TH:i:s.u\Z'),
             ], 422);
         });

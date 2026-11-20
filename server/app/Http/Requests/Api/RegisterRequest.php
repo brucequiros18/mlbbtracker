@@ -37,7 +37,7 @@ class RegisterRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'username.regex' => 'Use 3-24 letters, numbers or underscores.',
+            'username.regex' => 'Use 3-24 letters, numbers, underscores, spaces or dots - it may not start or end with a space.',
             'mlbbId.regex' => 'The MLBB ID must be 4-20 digits.',
         ];
     }

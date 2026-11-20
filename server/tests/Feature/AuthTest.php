@@ -347,6 +347,17 @@ class AuthTest extends TestCase
             ->assertJsonPath('code', 'PROFILE_ALREADY_COMPLETE');
     }
 
+    public function test_register_accepts_spaces_and_dots_in_the_username(): void
+    {
+        $this->useFakeVerifier();
+
+        $token = $this->signIn();
+
+        $this->register($token, ['username' => 'Minecraft Kid.'])
+            ->assertOk()
+            ->assertJsonPath('data.username', 'Minecraft Kid.');
+    }
+
     /**
      * @return array<string, array<string, mixed>>
      */
@@ -356,7 +367,7 @@ class AuthTest extends TestCase
         // positionally as $overrides instead of as named arguments.
         return [
             'username too short' => [['username' => 'ab']],
-            'username with a space' => [['username' => 'has space']],
+            'username of dots only' => [['username' => '...']],
             'username with a dash' => [['username' => 'Ash-Ketchum']],
             'mlbb id with letters' => [['mlbbId' => '12ab']],
             'mlbb id too short' => [['mlbbId' => '123']],

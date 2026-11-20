@@ -29,7 +29,13 @@ class AuthService
 
     private const SESSION_EXPIRED = 'Your session has expired. Please sign in again.';
 
-    public const USERNAME_PATTERN = '/^[A-Za-z0-9_]{3,24}$/';
+    /**
+     * 3-24 characters: letters, numbers, underscores, spaces and dots.
+     * Must start with a letter/number/underscore (no invisible leading space)
+     * and may not end with a space (invisible); a trailing dot is allowed so
+     * names like "Minecraft Kid." work.
+     */
+    public const USERNAME_PATTERN = '/^[A-Za-z0-9_][A-Za-z0-9_. ]{1,22}[A-Za-z0-9_.]$/';
 
     public const MLBB_ID_PATTERN = '/^\d{4,20}$/';
 
