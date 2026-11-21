@@ -1,0 +1,11 @@
+vendor
+node_modules
+storage/logs/*
+storage/framework/cache/*
+storage/framework/views/*
+database/database.sqlite
+.env
+.env.backup
+.phpunit.result.cache
+tests
+docker

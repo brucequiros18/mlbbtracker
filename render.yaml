@@ -1,0 +1,38 @@
+# Render Blueprint - the full MLBB Tracker stack.
+#
+# Deploy from https://dashboard.render.com/select-repo → "Blueprint".
+# Render reads this file and creates the service; you only fill in the
+# sync:false secrets (Firebase keys) in the dashboard afterwards.
+
+services:
+  - type: web
+    name: mlbbtracker
+    runtime: docker
+    dockerfilePath: ./server/Dockerfile
+    plan: free
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        value: https://mlbbtracker.onrender.com
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: MLBB_APP_NAME
+        value: MLBB Tracker API
+      # Firebase email+password sign-in (public web config values).
+      - key: MLBB_FIREBASE_PROJECT_ID
+        value: mlbb-tracker-56778
+      - key: MLBB_FIREBASE_API_KEY
+        value: AIzaSyDd1NN3AwMDHuqjWFsx_nlsHNSogjhH760
+      - key: MLBB_FIREBASE_AUTH_DOMAIN
+        value: mlbb-tracker-56778.firebaseapp.com
+      # Cross-origin callers (GitHub Pages). Update if the Pages URL differs.
+      - key: MLBB_CORS_ALLOWED_ORIGINS
+        value: https://brucequiros18.github.io
+      # Secrets with no safe default - set these in the Render dashboard:
+      - key: APP_KEY
+        sync: false

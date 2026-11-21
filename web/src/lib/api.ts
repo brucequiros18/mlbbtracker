@@ -40,8 +40,12 @@ export class ApiError extends Error {
   }
 }
 
-/** The API lives on the same origin as the app. */
-const API_BASE = '/api/v1'
+/**
+ * The API path. Same origin by default (Laravel serves the app), or an
+ * absolute URL when the app is deployed separately - e.g. the GitHub Pages
+ * build sets VITE_API_BASE to the Render API origin.
+ */
+const API_BASE = import.meta.env.VITE_API_BASE ?? '/api/v1'
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
