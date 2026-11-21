@@ -4,6 +4,18 @@ A **Mobile Legends: Bang Bang analytics platform** — **React 19 + Vite + TypeS
 
 > **Live and backed by real data**: hero roster (133 heroes), win / ban / pick meta rankings with a tier-list view, recorded daily history, esports standings and verified grand-final results, a hero head-to-head comparison, a personal watchlist and Firebase-powered accounts. Nothing is ever fabricated — every number traces to a provider observation or a sourced result.
 
+## ⬇️ Download for Windows
+
+[![Download](https://img.shields.io/badge/Download-MLBB_Tracker_v0.12.0_(Windows)-2e7cd6?style=for-the-badge&logo=github)](https://github.com/brucequiros18/mlbbtracker/releases/download/v0.12.0/MLBB-Tracker-Windows-0.12.0.zip)
+
+**The full working app in one zip (50 MB)** — React front end, Laravel API, SQLite database and a bundled PHP 8.4 runtime. No PHP, Composer or Node install required.
+
+1. Unzip anywhere
+2. Double-click **`START-MLBB-TRACKER.bat`**
+3. Your browser opens **http://127.0.0.1:8000** — done
+
+All releases: [github.com/brucequiros18/mlbbtracker/releases](https://github.com/brucequiros18/mlbbtracker/releases)
+
 ---
 
 ## Architecture

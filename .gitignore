@@ -49,6 +49,7 @@ releases/*.apk
 releases/latest.json
 
 # ---- Local helper artifacts ----
+build/
 *.png
 !web/public/**/*.png
 !mobile/web/**/*.png
