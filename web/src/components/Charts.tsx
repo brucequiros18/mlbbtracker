@@ -4,6 +4,8 @@ import {
   AreaChart,
   CartesianGrid,
   Legend,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -186,4 +188,75 @@ function HistoryBars({ points }: { points: HistoryPoint[] }) {
       })}
     </div>
   )
+}
+
+export interface ComparisonSeries {
+  name: string
+  colour: string
+}
+
+/**
+ * The 7-day win-rate trends of two or three heroes overlaid on one line
+ * chart. The data arrives date-keyed with one column per hero; colours come
+ * from the theme tokens so both modes read correctly.
+ */
+export function ComparisonChart({
+  data,
+  series,
+  height = 240,
+}: {
+  data: Array<Record<string, number | string>>
+  series: ComparisonSeries[]
+  height?: number
+}) {
+  if (data.length === 0 || series.length === 0) {
+    return (
+      <p className="rounded-card border border-border bg-card px-4 py-8 text-center text-sm text-muted">
+        The provider has no trend data for these heroes yet.
+      </p>
+    )
+  }
+
+  return (
+    <div className="rounded-card border border-border bg-card p-4">
+      <p className="mb-2 text-sm font-semibold">7-day win-rate trend</p>
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={shortDate} />
+          <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} unit="%" />
+          <Tooltip
+            contentStyle={{
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              color: 'var(--text)',
+            }}
+            labelStyle={{ color: 'var(--muted)' }}
+            formatter={(value) => [`${String(value)}%`]}
+          />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          {series.map((entry) => (
+            <Line
+              key={entry.name}
+              type="monotone"
+              dataKey={entry.name}
+              name={entry.name}
+              stroke={entry.colour}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 3 }}
+            />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function shortDate(value: string): string {
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime())
+    ? value
+    : parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }

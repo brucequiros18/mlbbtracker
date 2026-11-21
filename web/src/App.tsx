@@ -5,6 +5,7 @@ import { AuthProvider } from './auth/AuthProvider'
 import { PlayerProvider } from './players/PlayerProvider'
 import { AppShell } from './components/AppShell'
 import { AccountPage } from './pages/AccountPage'
+import { ComparePage } from './pages/ComparePage'
 import { EsportsPage } from './pages/EsportsPage'
 import { HeroDetailPage } from './pages/HeroDetailPage'
 import { HeroesPage } from './pages/HeroesPage'
@@ -43,6 +44,7 @@ function App() {
                 <Route path="/ranks" element={<RanksPage />} />
                 <Route path="/players" element={<PlayersPage />} />
                 <Route path="/saved" element={<SavedPage />} />
+                <Route path="/compare" element={<ComparePage />} />
                 <Route path="/esports" element={<EsportsPage />} />
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="*" element={<NotFoundPage />} />
