@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 
 import { api, ApiError } from '../lib/api'
 import { useAuth, useAuthMutations } from '../auth/AuthProvider'
@@ -14,7 +14,7 @@ import { count, percent } from '../lib/format'
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews'
 import { StatTile } from '../components/StatTile'
 import { HeroAvatar } from '../components/HeroAvatar'
-import { InfoIcon, LogoutIcon } from '../components/Icons'
+import { EyeIcon, EyeOffIcon, InfoIcon, LogoutIcon } from '../components/Icons'
 
 export function PlayersPage() {
   const auth = useAuth()
@@ -74,7 +74,8 @@ function SignInPanel() {
       <header className="text-center">
         <h1 className="font-display text-2xl font-extrabold tracking-tight">Sign in</h1>
         <p className="text-sm text-text-2">
-          Sign in or create an account with your email.
+          One email is all it takes - Firebase verifies the password and the
+          server only ever receives a signed token.
         </p>
       </header>
 
@@ -439,6 +440,9 @@ export function Field({
   inputMode,
   disabled,
   autoComplete,
+  error,
+  hint,
+  onBlur,
 }: {
   label: string
   value: string
@@ -448,23 +452,66 @@ export function Field({
   inputMode?: 'text' | 'numeric' | 'email'
   disabled?: boolean
   autoComplete?: string
+  /** Validation message shown under the field; also sets aria-invalid. */
+  error?: string | null
+  /** Static guidance shown under the field (before any error). */
+  hint?: string
+  onBlur?: () => void
 }) {
+  const [revealed, setRevealed] = useState(false)
+  const isPassword = type === 'password'
+  const inputType = isPassword && revealed ? 'text' : type
+  const fieldId = useId()
+  const describedBy = error ? `${fieldId}-error` : hint ? `${fieldId}-hint` : undefined
+
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+    <div>
+      <label
+        htmlFor={fieldId}
+        className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.08em] text-muted"
+      >
         {label}
-      </span>
-      <input
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        inputMode={inputMode}
-        disabled={disabled}
-        autoComplete={autoComplete}
-        className="w-full rounded-control border border-border bg-bg-2 px-3 py-2.5 text-sm outline-none transition focus:border-accent disabled:opacity-60"
-      />
-    </label>
+      </label>
+      <div className="relative">
+        <input
+          id={fieldId}
+          type={inputType}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          inputMode={inputMode}
+          disabled={disabled}
+          autoComplete={autoComplete}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          className={`w-full rounded-control border bg-bg-2 px-3 py-2.5 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30 disabled:opacity-60 ${
+            isPassword ? 'pr-11' : ''
+          } ${error ? 'border-negative' : 'border-border'}`}
+        />
+        {isPassword ? (
+          <button
+            type="button"
+            onClick={() => setRevealed((current) => !current)}
+            aria-label={revealed ? 'Hide password' : 'Show password'}
+            aria-pressed={revealed}
+            tabIndex={-1}
+            className="absolute inset-y-0 right-0 grid w-11 cursor-pointer place-items-center text-muted transition-colors duration-200 hover:text-text-1 focus-visible:text-text-1 focus-visible:outline-none"
+          >
+            {revealed ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+          </button>
+        ) : null}
+      </div>
+      {error ? (
+        <p id={`${fieldId}-error`} className="mt-1.5 text-xs text-negative">
+          {error}
+        </p>
+      ) : hint ? (
+        <p id={`${fieldId}-hint`} className="mt-1.5 text-xs text-muted">
+          {hint}
+        </p>
+      ) : null}
+    </div>
   )
 }
 

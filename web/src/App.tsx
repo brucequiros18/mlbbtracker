@@ -33,9 +33,13 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      {/* BASE_URL matches the Vite base: "/" in dev and single-origin builds,
-          "/mlbbtracker/app/" on GitHub Pages — routes resolve in both. */}
-      <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+      {/* The router base is the *document's* path, not Vite's asset base:
+          single-origin serves the document at "" (assets under /app/), while
+          GitHub Pages serves it under /mlbbtracker/app (deploy_pages.ps1 sets
+          VITE_ROUTER_BASENAME for that build). */}
+      <BrowserRouter
+        basename={(import.meta.env.VITE_ROUTER_BASENAME ?? '').replace(/\/$/, '')}
+      >
         <AuthProvider>
           <PlayerProvider>
             <AppShell>

@@ -44,10 +44,12 @@ Write-Host "==> Building React app for GitHub Pages (base $pagesBase, API: $(if 
 Push-Location $webDir
 try {
     $env:VITE_API_BASE = $ApiBase
+    $env:VITE_ROUTER_BASENAME = $pagesBase
     npx vite build --base=$pagesBase
     if ($LASTEXITCODE -ne 0) { throw "vite build failed with exit code $LASTEXITCODE." }
 } finally {
     Remove-Item Env:\VITE_API_BASE -ErrorAction SilentlyContinue
+    Remove-Item Env:\VITE_ROUTER_BASENAME -ErrorAction SilentlyContinue
     Pop-Location
 }
 

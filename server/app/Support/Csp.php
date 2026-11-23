@@ -17,8 +17,11 @@ final class Csp
      * The policy for the React app shell.
      *
      * Scripts and styles come from this origin plus Google's Identity
-     * Services (the sign-in button) and Google Fonts. Images may come from
-     * anywhere, because hero portraits are served by third-party providers.
+     * Services (the sign-in button) and Google Fonts. Connections go to this
+     * origin plus Google (sign-in) and Firebase Authentication (email +
+     * password sign-up, sign-in, password reset and token refresh). Images
+     * may come from anywhere, because hero portraits are served by
+     * third-party providers.
      *
      * @return array<string, list<string>>
      */
@@ -30,7 +33,16 @@ final class Csp
             'style-src' => ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
             'font-src' => ["'self'", 'https://fonts.gstatic.com', 'data:'],
             'img-src' => ["'self'", 'data:', 'https:'],
-            'connect-src' => ["'self'", 'https://accounts.google.com'],
+            'connect-src' => [
+                "'self'",
+                'https://accounts.google.com',
+                // Firebase Authentication: sign-up, sign-in, password reset and
+                // email verification all post here (auth/network-request-failed
+                // otherwise - the SDK honestly reports it as unreachable).
+                'https://identitytoolkit.googleapis.com',
+                // Firebase ID-token refresh when the current token is stale.
+                'https://securetoken.googleapis.com',
+            ],
             'frame-src' => ['https://accounts.google.com'],
             'worker-src' => ["'self'"],
             'manifest-src' => ["'self'"],
