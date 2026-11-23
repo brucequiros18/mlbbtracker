@@ -33,7 +33,9 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      {/* BASE_URL matches the Vite base: "/" in dev and single-origin builds,
+          "/mlbbtracker/app/" on GitHub Pages — routes resolve in both. */}
+      <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
         <AuthProvider>
           <PlayerProvider>
             <AppShell>

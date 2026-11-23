@@ -277,3 +277,42 @@ The MLBB ID collected at registration is **self-declared** — it is stored as
 typed, never checked against Moonton, and every account payload carries
 `mlbbIdVerified: false`. The app password (Argon2id, PHP `password_hash`) is
 app-only: it confirms profile edits and is never a sign-in method.
+
+## 11. GitHub Pages (download website + SPA demo)
+
+`scripts/deploy_pages.ps1` builds and force-pushes the `gh-pages` branch with
+two sites in one tree:
+
+```
+gh-pages/
+├── index.html          landing / download page  (source: site/)
+├── icon-512.png        landing assets
+├── 404.html            SPA index + basename-fold redirect
+└── app/                built React SPA (vite --base=/mlbbtracker/app/)
+```
+
+| URL | Serves |
+|---|---|
+| `https://brucequiros18.github.io/mlbbtracker/` | download website: introduction, features, similar apps, versions, download |
+| `https://brucequiros18.github.io/mlbbtracker/app/` | React SPA demo (same-origin API only — without an API host it shows its honest error states) |
+
+How it works:
+
+- The SPA is built with `--base=/mlbbtracker/app/`; `BrowserRouter` derives its
+  `basename` from `import.meta.env.BASE_URL`, so the same source serves both
+  single-origin (`/`) and Pages (`/mlbbtracker/app/`) without changes.
+- GitHub Pages serves `404.html` for unknown paths (the SPA-fallback trick).
+  The root `404.html` is the app index with an inline script that folds any
+  unknown path under `/mlbbtracker/app/` — React Router v7 renders nothing when
+  a URL does not start with the basename, so the fold is required for deep
+  links like `/mlbbtracker/compare?h=masha,argus` to work.
+- Publish:
+
+  ```powershell
+  .\scripts\deploy_pages.ps1                          # same-origin API
+  .\scripts\deploy_pages.ps1 -ApiBase https://mlbbtracker.onrender.com
+  ```
+
+- Local verification without publishing: `python build/pages_qa.py` assembles
+  the same tree, serves it locally and runs 12 Playwright checks (landing
+  content, mobile, app root, deep link, 404 fallback).

@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MLBB Tracker — Live Mobile Legends meta analytics · Download</title>
+<meta name="description" content="MLBB Tracker turns two live community data sources into one dependable picture of the Mobile Legends meta: win, ban and pick rates, tier lists, trends, esports standings and a consented player dashboard. Free Windows package, no installs.">
+<meta property="og:title" content="MLBB Tracker — Live Mobile Legends meta analytics">
+<meta property="og:description" content="Real providers, verified accounts, honest numbers. Download the full Windows package — no installs required.">
+<meta property="og:image" content="icon-512.png">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0B1020">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B1020;
+    --card: #141C36;
+    --card2: #1B2748;
+    --line: #263353;
+    --blue: #2E7CD6;
+    --blue-lt: #6FA8E8;
+    --gold: #E8C35A;
+    --text: #F2F5FC;
+    --muted: #9AA8CB;
+    --faint: #5A6788;
+    --green: #4ADE80;
+    --ember: #E8825A;
+    --purple: #A78BFA;
+    --display: "Rajdhani", "Segoe UI", sans-serif;
+    --body: "Inter", "Segoe UI", system-ui, sans-serif;
+    --mono: "Cascadia Mono", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue-lt); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  img { max-width: 100%; display: block; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── header ── */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(11, 16, 32, 0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav { display: flex; align-items: center; gap: 20px; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 19px; letter-spacing: 1px; color: var(--text); }
+  .brand img { width: 32px; height: 32px; border-radius: 8px; }
+  .nav nav { margin-left: auto; display: flex; gap: 26px; }
+  .nav nav a { color: var(--muted); font-size: 14.5px; font-weight: 500; }
+  .nav nav a:hover { color: var(--text); text-decoration: none; }
+  .nav .btn { padding: 9px 18px; font-size: 14px; }
+  @media (max-width: 860px) { .nav nav { display: none; } }
+
+  /* ── buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--body); font-weight: 600; font-size: 15.5px;
+    padding: 14px 28px; border-radius: 12px; border: 1px solid transparent;
+    cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-2px); }
+  .btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--blue) 0%, #1F5FB8 100%);
+    color: #fff; box-shadow: 0 8px 24px rgba(46, 124, 214, 0.35);
+  }
+  .btn-primary:hover { box-shadow: 0 12px 30px rgba(46, 124, 214, 0.5); }
+  .btn-gold { background: var(--gold); color: #1A1405; box-shadow: 0 8px 24px rgba(232, 195, 90, 0.3); }
+  .btn-ghost { background: transparent; color: var(--text); border-color: var(--line); }
+  .btn-ghost:hover { border-color: var(--blue-lt); }
+  .btn svg { width: 18px; height: 18px; flex: none; }
+
+  /* ── hero ── */
+  .hero { position: relative; padding: 88px 0 64px; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 75% 20%, rgba(46, 124, 214, 0.16), transparent 65%),
+      radial-gradient(ellipse 45% 40% at 15% 80%, rgba(232, 195, 90, 0.07), transparent 65%);
+    pointer-events: none;
+  }
+  .hero .wrap { position: relative; display: grid; grid-template-columns: 1.25fr 1fr; gap: 48px; align-items: center; }
+  .kicker { font-size: 13px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; }
+  h1 { font-family: var(--display); font-size: clamp(42px, 6vw, 64px); font-weight: 700; line-height: 1.05; letter-spacing: 1px; }
+  .hero p.lead { color: var(--muted); font-size: 18px; margin-top: 18px; max-width: 54ch; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+  .chip {
+    background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 16px; font-size: 13.5px; color: var(--blue-lt); font-weight: 500;
+  }
+  .chip b { color: var(--text); font-weight: 600; }
+  .cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+  .hero-art { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .hero-art img {
+    width: min(300px, 70%); border-radius: 22%;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    border: 1px solid var(--line);
+  }
+  .hero-art .caption { font-size: 13px; color: var(--faint); text-align: center; }
+  @media (max-width: 860px) {
+    .hero .wrap { grid-template-columns: 1fr; }
+    .hero-art { order: -1; }
+    .hero-art img { width: 170px; }
+  }
+
+  /* ── sections ── */
+  section { padding: 64px 0; }
+  section.alt { background: linear-gradient(180deg, rgba(20, 28, 54, 0.45), rgba(20, 28, 54, 0)); }
+  .sec-head { max-width: 720px; margin-bottom: 40px; }
+  .sec-head .kicker { margin-bottom: 10px; }
+  h2 { font-family: var(--display); font-size: clamp(30px, 4vw, 40px); font-weight: 700; letter-spacing: 0.5px; line-height: 1.15; }
+  .sec-head p { color: var(--muted); font-size: 16.5px; margin-top: 12px; }
+
+  /* ── pipeline (intro) ── */
+  .intro-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 44px; align-items: start; }
+  .intro-grid p + p { margin-top: 16px; color: var(--muted); }
+  .intro-grid p strong, .intro-grid p b { color: var(--text); }
+  .pipeline { display: flex; flex-direction: column; gap: 14px; }
+  .pipe-step {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 20px; display: flex; gap: 14px; align-items: flex-start;
+  }
+  .pipe-step .dot {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-weight: 700; font-size: 15px;
+    background: var(--blue); color: var(--text);
+  }
+  .pipe-step:nth-child(3) .dot { background: var(--gold); color: #1A1405; }
+  .pipe-step h3 { font-family: var(--display); font-size: 17.5px; letter-spacing: 0.3px; }
+  .pipe-step p { font-size: 14px; color: var(--muted); margin-top: 3px; }
+  .pipe-arrow { text-align: center; color: var(--faint); font-size: 14px; line-height: 1; }
+  @media (max-width: 860px) { .intro-grid { grid-template-columns: 1fr; } }
+
+  /* ── feature grid ── */
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .grid.two { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .grid, .grid.two { grid-template-columns: 1fr; } }
+  .f-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px 22px; transition: border-color .2s ease, transform .2s ease;
+  }
+  .f-card:hover { border-color: var(--blue); transform: translateY(-3px); }
+  .f-card .ico {
+    width: 44px; height: 44px; border-radius: 12px; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(46, 124, 214, 0.18); color: var(--blue-lt);
+  }
+  .f-card:nth-child(4n+2) .ico { background: rgba(232, 195, 90, 0.16); color: var(--gold); }
+  .f-card:nth-child(4n+3) .ico { background: rgba(74, 222, 128, 0.14); color: var(--green); }
+  .f-card:nth-child(4n+4) .ico { background: rgba(167, 139, 250, 0.16); color: var(--purple); }
+  .f-card .ico svg { width: 22px; height: 22px; }
+  .f-card h3 { font-family: var(--display); font-size: 18px; letter-spacing: 0.3px; margin-bottom: 8px; }
+  .f-card p { font-size: 14.5px; color: var(--muted); }
+
+  /* ── solve rows ── */
+  .solve { display: flex; flex-direction: column; gap: 16px; }
+  .solve-row {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 22px; align-items: center;
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 26px;
+  }
+  .solve-row .prob { color: var(--muted); font-size: 15px; }
+  .solve-row .prob b { display: block; color: var(--ember); font-size: 12.5px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; font-weight: 600; }
+  .solve-row .fix { color: var(--text); font-size: 15px; }
+  .solve-row .fix b { display: block; color: var(--green); font-size: 12.5px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; font-weight: 600; }
+  .solve-row .arrow { color: var(--gold); font-size: 22px; }
+  @media (max-width: 760px) {
+    .solve-row { grid-template-columns: 1fr; gap: 12px; }
+    .solve-row .arrow { transform: rotate(90deg); justify-self: center; }
+  }
+
+  /* ── compare table ── */
+  .table-box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 720px; }
+  th, td { text-align: left; padding: 15px 20px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: var(--display); font-size: 13.5px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold); background: var(--card2); }
+  tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; color: var(--text); white-space: nowrap; }
+  td.scene { color: var(--muted); white-space: nowrap; }
+  td.best { color: var(--muted); }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .tag.yes { background: rgba(74, 222, 128, 0.15); color: var(--green); }
+  .tag.no { background: rgba(232, 130, 90, 0.14); color: var(--ember); }
+  tr.self td { background: rgba(46, 124, 214, 0.09); }
+  tr.self td.name { color: var(--blue-lt); }
+  .table-note { font-size: 13.5px; color: var(--faint); margin-top: 14px; }
+
+  /* ── versions ── */
+  .versions { display: flex; flex-direction: column; gap: 0; }
+  .ver {
+    display: grid; grid-template-columns: 170px 1fr; gap: 26px;
+    padding: 24px 4px; border-bottom: 1px solid var(--line); position: relative;
+  }
+  .ver:last-child { border-bottom: none; }
+  .ver .vnum { font-family: var(--display); font-weight: 700; font-size: 22px; color: var(--text); }
+  .ver .vdate { font-size: 13px; color: var(--faint); margin-top: 2px; }
+  .ver.latest .vnum { color: var(--gold); }
+  .badge-latest {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    background: var(--gold); color: #1A1405; border-radius: 999px; padding: 2px 10px; margin-left: 8px; vertical-align: middle;
+  }
+  .ver h3 { font-family: var(--display); font-size: 19px; letter-spacing: 0.3px; margin-bottom: 6px; }
+  .ver p { font-size: 14.5px; color: var(--muted); }
+  .ver ul { margin: 8px 0 0 18px; color: var(--muted); font-size: 14.5px; }
+  .ver ul li { margin-bottom: 4px; }
+  @media (max-width: 640px) { .ver { grid-template-columns: 1fr; gap: 8px; } }
+
+  /* ── download ── */
+  .dl-card {
+    background: linear-gradient(160deg, var(--card2) 0%, var(--card) 70%);
+    border: 1px solid var(--blue); border-radius: 22px;
+    padding: 44px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 44px;
+    box-shadow: 0 24px 60px rgba(46, 124, 214, 0.18);
+  }
+  .dl-card h2 { margin-bottom: 10px; }
+  .dl-card .sub { color: var(--muted); font-size: 16px; margin-bottom: 26px; }
+  .dl-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 26px; }
+  .dl-meta div { background: rgba(11, 16, 32, 0.6); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+  .dl-meta .lbl { font-size: 11.5px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--faint); }
+  .dl-meta .val { font-size: 14.5px; color: var(--text); font-weight: 600; margin-top: 3px; word-break: break-all; }
+  .dl-meta .val.mono { font-family: var(--mono); font-size: 12.5px; font-weight: 400; color: var(--blue-lt); }
+  .steps { counter-reset: step; display: flex; flex-direction: column; gap: 16px; }
+  .steps li {
+    list-style: none; counter-increment: step; position: relative;
+    padding-left: 52px; min-height: 40px; color: var(--muted); font-size: 15px;
+  }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: -2px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--blue); color: var(--text);
+    font-family: var(--display); font-weight: 700; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .steps li b { color: var(--text); display: block; font-size: 15.5px; }
+  .steps li code { font-family: var(--mono); font-size: 13px; background: rgba(11,16,32,.7); border: 1px solid var(--line); padding: 1px 7px; border-radius: 6px; color: var(--gold); }
+  .req { margin-top: 24px; font-size: 13.5px; color: var(--faint); }
+  @media (max-width: 860px) { .dl-card { grid-template-columns: 1fr; padding: 30px 24px; } }
+
+  /* ── footer ── */
+  footer { border-top: 1px solid var(--line); padding: 44px 0 54px; margin-top: 24px; }
+  .foot { display: flex; flex-wrap: wrap; gap: 28px; justify-content: space-between; align-items: flex-start; }
+  .foot .about { max-width: 460px; }
+  .foot .about .brand { margin-bottom: 12px; }
+  .foot .about p { font-size: 13.5px; color: var(--faint); }
+  .foot-links { display: flex; gap: 40px; flex-wrap: wrap; }
+  .foot-links h4 { font-family: var(--display); font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; }
+  .foot-links a { display: block; color: var(--muted); font-size: 14px; margin-bottom: 8px; }
+  .foot-links a:hover { color: var(--text); }
+  .legal { margin-top: 36px; font-size: 12.5px; color: var(--faint); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top"><img src="icon-512.png" alt="MLBB Tracker icon"> MLBB TRACKER</a>
+    <nav aria-label="Main">
+      <a href="#overview">Overview</a>
+      <a href="#features">Features</a>
+      <a href="#solve">Why it exists</a>
+      <a href="#compare">Similar apps</a>
+      <a href="#versions">Versions</a>
+    </nav>
+    <a class="btn btn-primary" href="#download" style="padding:9px 18px;font-size:14px;">Download</a>
+  </div>
+</header>
+
+<!-- ══════════════════════ HERO ══════════════════════ -->
+<div id="top" class="hero">
+  <div class="wrap">
+    <div>
+      <div class="kicker">Live Mobile Legends: Bang Bang analytics</div>
+      <h1>Real meta data.<br>Nothing fabricated.</h1>
+      <p class="lead">
+        MLBB Tracker turns two live community data sources into one dependable picture of the
+        Mobile Legends meta — win, ban and pick rates, tier lists, recorded history, verified
+        esports results and your own consented player dashboard.
+      </p>
+      <div class="chips">
+        <span class="chip"><b>133</b> heroes tracked</span>
+        <span class="chip"><b>2</b> live providers merged</span>
+        <span class="chip"><b>57</b> tests, all passing</span>
+        <span class="chip"><b>v0.12.0</b> · Nov 2026</span>
+      </div>
+      <div class="cta">
+        <a class="btn btn-gold" href="https://github.com/brucequiros18/mlbbtracker/releases/download/v0.12.0/MLBB-Tracker-Windows-0.12.0.zip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16"/></svg>
+          Download for Windows — 50.4 MB
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/brucequiros18/mlbbtracker">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.23c0 4.51 2.87 8.34 6.84 9.69.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.72-2.78.62-3.37-1.37-3.37-1.37-.45-1.19-1.11-1.5-1.11-1.5-.91-.63.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0112 6.93c.85 0 1.71.12 2.51.34 1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.9 0 1.37-.01 2.47-.01 2.81 0 .27.18.6.69.49A10.24 10.24 0 0022 12.23C22 6.58 17.52 2 12 2z"/></svg>
+          View source on GitHub
+        </a>
+      </div>
+    </div>
+    <div class="hero-art">
+      <img src="icon-512.png" alt="MLBB Tracker app icon — a shield with an analytics chart" width="300" height="300">
+      <div class="caption">Unofficial fan project · not affiliated with Moonton</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ OVERVIEW ══════════════════════ -->
+<section id="overview" class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Introduction</div>
+      <h2>What is MLBB Tracker?</h2>
+      <p>
+        A full-stack analytics platform for Mobile Legends: Bang Bang — a Laravel JSON API and a
+        React single-page app, packaged so the whole thing runs on your Windows machine with a
+        single double-click.
+      </p>
+    </div>
+    <div class="intro-grid">
+      <div>
+        <p>
+          The competitive Mobile Legends meta changes weekly, but the numbers live scattered across
+          community sites, spreadsheets and social posts — when they exist at all. MLBB Tracker
+          fetches from <b>two live community providers</b> (Rone Arena API and MLBBDex), merges
+          them against the official hero roster, and serves one cached, attributed picture through
+          a single JSON API.
+        </p>
+        <p>
+          Every number in the app traces back to a <b>provider observation or a sourced result</b>.
+          Rates are published exactly as the providers report them, sources are named in every
+          response, and when upstream data is missing the interface says so instead of inventing
+          a value. Player accounts use <b>Google sign-in only</b>, your MLBB ID is self-declared
+          and explicitly marked unverified, and no Moonton password is ever involved.
+        </p>
+        <p>
+          The project ships as a <b>free Windows package</b> (bundled PHP runtime + database, zero
+          installs), as a self-hostable Docker/Render deployment, and as a static demo on GitHub
+          Pages. 57 offline tests keep the API contract and the token verification honest.
+        </p>
+      </div>
+      <div class="pipeline" aria-label="How a request flows">
+        <div class="pipe-step">
+          <div class="dot">1</div>
+          <div>
+            <h3>React client</h3>
+            <p>Rankings, tier list, trends, watchlist, compare, esports and your dashboard — one origin, no CORS.</p>
+          </div>
+        </div>
+        <div class="pipe-arrow" aria-hidden="true">▼</div>
+        <div class="pipe-step">
+          <div class="dot">2</div>
+          <div>
+            <h3>Laravel API · /api/v1</h3>
+            <p>Cache-first reads, rate limits, RS256 token verification, <code>{ data, meta }</code> envelope with named sources.</p>
+          </div>
+        </div>
+        <div class="pipe-arrow" aria-hidden="true">▼</div>
+        <div class="pipe-step">
+          <div class="dot">3</div>
+          <div>
+            <h3>Live providers</h3>
+            <p>Rone Arena API (ranked rates) + MLBBDex (roster, roles, tiers) — merged, health-logged, attributed.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ FEATURES ══════════════════════ -->
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Functions</div>
+      <h2>What it can do</h2>
+      <p>Eight things the app does today — each backed by live data or a sourced result.</p>
+    </div>
+    <div class="grid">
+      <div class="f-card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-6 4 3 5-7 4 4"/><path d="M3 21h18"/></svg></div>
+        <h3>Live rankings &amp; tier list</h3>
+        <p>All 133 heroes with win, ban and pick rates grouped into S+ → C tiers. Filter by 1–30 day window and Epic → Glory rank bracket; sort any column.</p>
+      </div>
+      <div class="f-card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg></div>
+        <h3>Hero detail &amp; trends</h3>
+        <p>Roles, lanes, live rates and a 7-day win-rate chart — plus “Our Observations”, the app’s own recorded daily history, kept separate from provider trends.</p>
+      </div>
+      <div class="f-card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></div>
+        <h3>Personal watchlist</h3>
+        <p>Bookmark any hero into the Saved tab: summary strip, average win rate, rank out of 133 and daily movement chips — instantly, on your device.</p>
+      </div>
+      <div class="f-card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10l-3-3m3 3l-3 3"/><path d="M17 17H7l3-3m-3 3l3 3"/></svg></div>
+        <h3>Head-to-head compare</h3>
+        <p>Put up to three heroes side by side — tier, roles, rates with the best value highlighted, strong/weak matchups — as a shareable URL.</p>
+      </div>
+      <div class="f-card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M6 4h12v5a6 6 0 01-12 0z"/><path d="M6 6H3.5A1.5 1.5 0 002 7.5c0 2.5 1.7 4 4 4M18 6h2.5A1.5 1.5 0 0122 7.5c0 2.5-1.7 4-4 4"/></svg></div>
+        <h3>Esports standings</h3>
+        <p>MPL ID / PH / MY / KH standings and the M7 World Championship result — verified against published sources, with honest notes where brackets aren’t published.</p>
+      </div>
+      <div class="f-card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3M7 9h4M7 13h7"/></svg></div>
+        <h3>Your own dashboard</h3>
+        <p>Consented player connect: a one-time code to your in-game mailbox links your account — real profile, stats, recent matches and top heroes, polled live.</p>
+      </div>
+      <div class="f-card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9.5 12l2 2 3.5-4"/></svg></div>
+        <h3>Secure by construction</h3>
+        <p>Google/Firebase sign-in only, ID tokens verified server-side (RS256), Argon2id hashes, SHA-256 session digests, rate limits and a strict CSP.</p>
+      </div>
+      <div class="f-card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg></div>
+        <h3>Installable &amp; portable</h3>
+        <p>Install it as a PWA from the browser, or run the self-contained Windows package — bundled PHP + SQLite, no installers, no admin rights needed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ WHAT IT SOLVES ══════════════════════ -->
+<section id="solve" class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">The problem</div>
+      <h2>What it solves</h2>
+      <p>Four frustrations every Mobile Legends player knows — and how this project answers them.</p>
+    </div>
+    <div class="solve">
+      <div class="solve-row">
+        <div class="prob"><b>The problem</b>Meta numbers are scattered across community sites, patch posts and spreadsheets — and they disagree with each other.</div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="fix"><b>MLBB Tracker</b>Two live providers merged into one cached picture, refreshed on demand, with every payload naming its sources and generation time.</div>
+      </div>
+      <div class="solve-row">
+        <div class="prob"><b>The problem</b>Guide sites publish confident win rates that nobody can trace — half the numbers floating around are made up.</div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="fix"><b>MLBB Tracker</b>Nothing is invented: every figure traces to a provider observation or a sourced result, and missing data is shown as missing, not guessed.</div>
+      </div>
+      <div class="solve-row">
+        <div class="prob"><b>The problem</b>Moonton offers no public stats API, and “track other players” tools quietly ask for your game password.</div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="fix"><b>MLBB Tracker</b>Community providers used within their licenses; your own account links via an in-game mailbox code — no Moonton password, ever. Other players’ stats are never fabricated.</div>
+      </div>
+      <div class="solve-row">
+        <div class="prob"><b>The problem</b>Analytics tools want Docker, a database server and an account before you can see a single number.</div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="fix"><b>MLBB Tracker</b>One zip, one double-click: the full stack (API + web app + database) runs locally on Windows in seconds — and it’s free.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ SIMILAR APPS ══════════════════════ -->
+<section id="compare">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Landscape</div>
+      <h2>Similar apps</h2>
+      <p>
+        The stats-site genre is well established for other games. This is where MLBB Tracker sits
+        among the projects players usually reach for.
+      </p>
+    </div>
+    <div class="table-box">
+      <table>
+        <thead>
+          <tr><th>Project</th><th>Scene</th><th>Best at</th><th>Covers MLBB?</th></tr>
+        </thead>
+        <tbody>
+          <tr class="self">
+            <td class="name">MLBB Tracker</td>
+            <td class="scene">Mobile Legends</td>
+            <td class="best">Merged live meta (win/ban/pick, tiers, trends), recorded history, esports standings and a consented player dashboard — with sources named on every payload.</td>
+            <td><span class="tag yes">Yes — purpose-built</span></td>
+          </tr>
+          <tr>
+            <td class="name">Mobile Legends app <span style="color:var(--faint);font-weight:400;">(Moonton)</span></td>
+            <td class="scene">Mobile Legends</td>
+            <td class="best">Official client: news, skins, matchmaking and your account — no open meta statistics.</td>
+            <td><span class="tag yes">Yes — official</span></td>
+          </tr>
+          <tr>
+            <td class="name">Mobile Legends Wiki</td>
+            <td class="scene">Mobile Legends</td>
+            <td class="best">Community-written hero, skill and item documentation — deep reference, but no live rate tracking.</td>
+            <td><span class="tag yes">Yes — wiki</span></td>
+          </tr>
+          <tr>
+            <td class="name">Dotabuff · OpenDota</td>
+            <td class="scene">Dota 2</td>
+            <td class="best">The reference standard for MOBA statistics: hero rates, builds, match history at scale.</td>
+            <td><span class="tag no">No — Dota 2</span></td>
+          </tr>
+          <tr>
+            <td class="name">U.GG · OP.GG</td>
+            <td class="scene">League of Legends</td>
+            <td class="best">Champion win rates, tier lists and counter picks with huge sample sizes.</td>
+            <td><span class="tag no">No — LoL</span></td>
+          </tr>
+          <tr>
+            <td class="name">Tracker.gg</td>
+            <td class="scene">Valorant · CoD · more</td>
+            <td class="best">Player-centric FPS tracking: rank, weapon and match statistics per account.</td>
+            <td><span class="tag no">No — FPS</span></td>
+          </tr>
+          <tr>
+            <td class="name">Liquipedia</td>
+            <td class="scene">All esports</td>
+            <td class="best">Tournament brackets, rosters and results across games — the esports encyclopedia.</td>
+            <td><span class="tag yes">Yes — MLBB esports</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="table-note">
+      Comparison reflects each project’s publicly documented focus. MLBB Tracker is unofficial and
+      community-data driven; it is not affiliated with Moonton or any team or league.
+    </p>
+  </div>
+</section>
+
+<!-- ══════════════════════ VERSIONS ══════════════════════ -->
+<section id="versions" class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Updates</div>
+      <h2>Versions &amp; release notes</h2>
+      <p>Semantic versioning, Keep a Changelog format. Every entry maps to a tagged commit or a published release.</p>
+    </div>
+    <div class="versions">
+      <div class="ver latest">
+        <div>
+          <div class="vnum">0.12.0 <span class="badge-latest">LATEST</span></div>
+          <div class="vdate">November 21, 2026</div>
+        </div>
+        <div>
+          <h3>Full working Windows package</h3>
+          <p>One double-click, zero installs — the whole stack bundled for Windows.</p>
+          <ul>
+            <li>Self-contained package: bundled PHP 8.4.28 runtime + Laravel API + built React SPA + empty SQLite</li>
+            <li><code>START-MLBB-TRACKER.bat</code> migrates, serves and opens the app at <code>http://127.0.0.1:8000</code></li>
+            <li>AI-generated app icon processed into the full PWA icon set; project documentation and presentation added</li>
+            <li>Smoke-tested: extract → migrate → serve → health check OK · <a href="https://github.com/brucequiros18/mlbbtracker/releases/tag/v0.12.0">release notes</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="ver">
+        <div>
+          <div class="vnum">0.11.0</div>
+          <div class="vdate">November 20, 2026</div>
+        </div>
+        <div>
+          <h3>Backend FastAPI → Laravel · client Flutter → React</h3>
+          <p>The exact same <code>/api/v1</code> JSON contract, re-implemented.</p>
+          <ul>
+            <li>Laravel (PHP 8.4) API with the <code>{data, meta}</code> envelope, camelCase keys and stable error codes preserved</li>
+            <li>React 19 + TypeScript + Vite + Tailwind web client with TanStack Query, React Router and Recharts</li>
+            <li>Password hashing upgraded scrypt → Argon2id; Google ID tokens verified locally (RS256 + cached JWKS)</li>
+            <li>PHPUnit suite green: 23 auth tests; SQLite dev database, Postgres-ready migrations</li>
+          </ul>
+        </div>
+      </div>
+      <div class="ver">
+        <div>
+          <div class="vnum">0.10.0</div>
+          <div class="vdate">November 17, 2026</div>
+        </div>
+        <div>
+          <h3>Google-only accounts</h3>
+          <p>The only credential is a Google sign-in — nothing else exists.</p>
+          <ul>
+            <li>Local RS256 verification of Google ID tokens (issuer, audience, expiry, <code>email_verified</code>) — the token is never stored</li>
+            <li>Opaque sessions with only SHA-256 digests persisted; 30-day sliding expiry</li>
+            <li>MLBB ID self-declared and always reported as <code>mlbbIdVerified: false</code>; app password Argon2id-hashed, never a login method</li>
+            <li>Honest configuration states — the app never offers a button that cannot work</li>
+          </ul>
+        </div>
+      </div>
+      <div class="ver">
+        <div>
+          <div class="vnum">0.9.0</div>
+          <div class="vdate">November 16, 2026</div>
+        </div>
+        <div>
+          <h3>Installable web app (PWA)</h3>
+          <p>Add it to your home screen or taskbar.</p>
+          <ul>
+            <li>Real manifest with any/maskable icons and app shortcuts; offline-capable build</li>
+            <li>Service worker caches the shell only — API routes are never cached, so offline shows honest error states instead of stale numbers</li>
+            <li>Install button plus manual instructions for Chrome, Edge, Chrome Android and Safari iOS</li>
+          </ul>
+        </div>
+      </div>
+      <div class="ver">
+        <div>
+          <div class="vnum">0.8.0</div>
+          <div class="vdate">November 16, 2026</div>
+        </div>
+        <div>
+          <h3>Download page &amp; release pipeline</h3>
+          <p>The first published build and the pipeline behind it.</p>
+          <ul>
+            <li><code>GET /download</code> — version, size, SHA-256, release date and notes, rendered server-side</li>
+            <li><code>scripts/package_apk.ps1</code> — one command to build, checksum and publish an Android package</li>
+            <li>Honest states: no manifest means “no build published yet”, never a broken link</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="table-note">
+      Earlier milestones (0.1.0 – 0.7.0: research, Flutter app, FastAPI backend, player connect,
+      snapshots, esports) are documented in the
+      <a href="https://github.com/brucequiros18/mlbbtracker/blob/main/CHANGELOG.md">full changelog</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ══════════════════════ DOWNLOAD ══════════════════════ -->
+<section id="download">
+  <div class="wrap">
+    <div class="dl-card">
+      <div>
+        <div class="kicker">Download</div>
+        <h2>MLBB Tracker for Windows</h2>
+        <p class="sub">
+          The full web app in one package: React frontend, Laravel API and a bundled PHP runtime.
+          Unzip it anywhere and run — no installers, no admin rights, no dependencies.
+        </p>
+        <a class="btn btn-gold" href="https://github.com/brucequiros18/mlbbtracker/releases/download/v0.12.0/MLBB-Tracker-Windows-0.12.0.zip" style="font-size:17px;padding:17px 34px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16"/></svg>
+          Download — MLBB-Tracker-Windows-0.12.0.zip
+        </a>
+        <div class="dl-meta">
+          <div><div class="lbl">Version</div><div class="val">0.12.0 · Nov 21, 2026</div></div>
+          <div><div class="lbl">Size</div><div class="val">50.4 MB (52,809,640 bytes)</div></div>
+          <div style="grid-column:1/-1;"><div class="lbl">SHA-256</div><div class="val mono">f0384f26e0f9c2e94a30094dfbc1f8b3e60a6a3916a80795b9009e868cf97f98</div></div>
+        </div>
+        <p class="req">
+          Requires 64-bit Windows 10/11. The package embeds PHP 8.4.28 and an empty SQLite database —
+          your data stays on your machine. Source code:
+          <a href="https://github.com/brucequiros18/mlbbtracker">github.com/brucequiros18/mlbbtracker</a>
+        </p>
+      </div>
+      <div>
+        <ol class="steps">
+          <li><b>Download &amp; unzip</b>Extract the zip to any folder — Documents, Desktop, a USB stick.</li>
+          <li><b>Double-click <code>START-MLBB-TRACKER.bat</code></b>It migrates the database and starts the local server.</li>
+          <li><b>The app opens</b>Visit <code>http://127.0.0.1:8000</code> — 133 heroes, live data, ready.</li>
+        </ol>
+        <p class="req" style="margin-top:28px;">
+          Prefer the browser? The web client is also installable as a PWA once you run the package.
+          Want to self-host? See the
+          <a href="https://github.com/brucequiros18/mlbbtracker/blob/main/docs/DEPLOYMENT.md">deployment guide</a>
+          (Docker / Render) and the
+          <a href="https://github.com/brucequiros18/mlbbtracker/tree/main/scripts">packaging scripts</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ FOOTER ══════════════════════ -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div class="about">
+        <a class="brand" href="#top"><img src="icon-512.png" alt="" width="32" height="32"> MLBB TRACKER</a>
+        <p>
+          Live Mobile Legends meta analytics — real providers, verified accounts, honest numbers.
+          Built with Laravel 13, React 19, TypeScript and Tailwind. 57 tests, all passing.
+        </p>
+      </div>
+      <div class="foot-links">
+        <div>
+          <h4>Project</h4>
+          <a href="https://github.com/brucequiros18/mlbbtracker">Source code</a>
+          <a href="https://github.com/brucequiros18/mlbbtracker/releases">Releases</a>
+          <a href="https://github.com/brucequiros18/mlbbtracker/blob/main/CHANGELOG.md">Changelog</a>
+          <a href="https://github.com/brucequiros18/mlbbtracker/blob/main/README.md">README</a>
+        </div>
+        <div>
+          <h4>Resources</h4>
+          <a href="https://github.com/brucequiros18/mlbbtracker/blob/main/docs/DEPLOYMENT.md">Deployment guide</a>
+          <a href="https://github.com/brucequiros18/mlbbtracker/tree/main/docs">Documentation</a>
+          <a href="https://github.com/brucequiros18/mlbbtracker/issues">Issues</a>
+        </div>
+      </div>
+    </div>
+    <p class="legal">
+      © 2026 MLBB Tracker · Unofficial fan project. Not affiliated with, endorsed or sponsored by
+      Moonton or Mobile Legends: Bang Bang. Game data belongs to its respective owners; provider
+      data is used under the terms stated in each API response’s <code>meta.sources</code>.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -54,3 +54,7 @@ build/
 !web/public/**/*.png
 !mobile/web/**/*.png
 !public/**/*.png
+!site/**/*.png
+
+# ---- Office lock files ----
+~$*

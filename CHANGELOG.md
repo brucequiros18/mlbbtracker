@@ -3,6 +3,33 @@
 All notable changes are documented here. Format follows Keep a Changelog;
 versions use Semantic Versioning.
 
+## [0.12.0] — 2026-11-21
+
+### Added — Full working Windows package + download website
+- **Self-contained Windows package** (`MLBB-Tracker-Windows-0.12.0.zip`,
+  52,809,640 bytes / 50.4 MB, SHA-256
+  `f0384f26e0f9c2e94a30094dfbc1f8b3e60a6a3916a80795b9009e868cf97f98`):
+  bundled PHP 8.4.28 runtime + Laravel API + built React SPA + empty SQLite.
+  `START-MLBB-TRACKER.bat` migrates, serves and opens the app at
+  `http://127.0.0.1:8000` — no installs, no admin rights, no dependencies.
+- Smoke-tested end to end: extract → migrate → serve → health check OK.
+- AI-generated app icon processed into the full PWA icon set; project
+  documentation (`docs/PROJECT_EXPLANATION_SCRIPT.docx`) and the 18-slide
+  presentation added.
+- **Download website** (`site/index.html`, published to GitHub Pages):
+  introduction, feature overview, problem/solution, similar-apps comparison,
+  version history and the download card with the real checksum, size and date.
+
+### Changed — GitHub Pages layout
+- Pages now serves the **landing page at the root** and the **React SPA under
+  `/mlbbtracker/app/`** (`scripts/deploy_pages.ps1`).
+- The SPA builds with `--base=/mlbbtracker/app/` and `BrowserRouter` takes its
+  `basename` from `import.meta.env.BASE_URL`, so deep links such as
+  `/app/compare?h=masha,argus` resolve instead of falling to the router's 404.
+- The root `404.html` is the SPA index plus a redirect that folds unknown paths
+  under the basename (React Router v7 renders nothing when a URL does not start
+  with the basename), keeping the SPA-fallback trick working on Pages.
+
 ## [0.11.0] — 2026-11-20
 
 ### Changed — Backend migration: FastAPI → Laravel

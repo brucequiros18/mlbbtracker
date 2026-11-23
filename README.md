@@ -14,6 +14,8 @@ A **Mobile Legends: Bang Bang analytics platform** — **React 19 + Vite + TypeS
 2. Double-click **`START-MLBB-TRACKER.bat`**
 3. Your browser opens **http://127.0.0.1:8000** — done
 
+**🌐 Website / download page:** [brucequiros18.github.io/mlbbtracker](https://brucequiros18.github.io/mlbbtracker/) — introduction, features, similar apps, version history and the download itself.
+
 All releases: [github.com/brucequiros18/mlbbtracker/releases](https://github.com/brucequiros18/mlbbtracker/releases)
 
 ---
@@ -64,10 +66,11 @@ mlbb-tracker/
 ├── server/          Laravel 13 API (controllers, services, migrations, tests)
 │   └── public/app/  the built React bundle, served at "/"
 ├── web/             React 19 + Vite + TypeScript + Tailwind v4 source
+├── site/            GitHub Pages download website (self-contained index.html)
 ├── mobile/          Flutter Android client (Riverpod, Dio, FL Chart)
 ├── database/        PostgreSQL bootstrap schema (Laravel migrations are canonical)
 ├── docs/            API docs, database schema, deployment, testing report, research
-├── scripts/         build_web.ps1 · run_web.ps1 · install_snapshot_task.ps1 · package_apk.ps1
+├── scripts/         build_web.ps1 · run_web.ps1 · deploy_pages.ps1 · package_windows.ps1
 └── releases/        published APK + latest.json (git-ignored)
 ```
 
