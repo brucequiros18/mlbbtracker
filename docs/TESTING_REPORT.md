@@ -1,6 +1,6 @@
 # Testing Report
 
-Date: **2026-11-13**. Latest full run: **2026-11-21** (57 Laravel PHPUnit
+Date: **2026-11-13**. Latest full run: **2026-11-23** (60 Laravel PHPUnit
 tests, all passing). Prior FastAPI-era runs are kept below for history.
 Platform: Windows 11.
 
@@ -14,11 +14,12 @@ cd server
 php vendor/bin/phpunit
 ```
 
-Result: **57 passed / 0 failed** (264 assertions).
+Result: **60 passed / 0 failed** (274 assertions).
 
 | Suite | Covers |
 |---|---|
 | `tests/Feature/AuthTest.php` (30) | Sign-in against faked verifiers (Firebase + Google): config endpoint (per-method enabled/disabled states, `503 GOOGLE_NOT_CONFIGURED`), account creation on first sign-in and reuse on the second, invalid tokens -> `401 GOOGLE_TOKEN_INVALID`, profile registration (username unique case-insensitively -> `409`, spaces/dots accepted, dashes/dots-only rejected, 6 validation cases -> `422`, unauthenticated -> `401`), `me`/expired-token sessions, logout removes only the session, profile edits confirmed by the app password (`403 INVALID_PASSWORD` on mismatch), and session tokens stored only as SHA-256 digests |
+| `tests/Feature/CspTest.php` (3) | The SPA's `Content-Security-Policy` allows Firebase Authentication's endpoints (`identitytoolkit` + `securetoken` — the fix for "Could not reach Firebase"), Google sign-in endpoints stay allowed, and the `/download` page policy remains closed (`connect-src 'self'`, no third parties) |
 | `tests/Unit/GoogleTokenVerifierTest.php` (13) | The **real** RS256 path offline: tokens signed with a committed test key against a faked JWKS - valid token identity, JWKS caching (1 fetch for 2 tokens), unknown `kid` -> refetch then `401`, impostor signature -> `401`, wrong issuer/audience -> `401`, expired token, unverified/missing email, missing `sub`, HS256 forgery, garbage input, JWKS outage -> `503 PROVIDER_UNAVAILABLE` |
 | `tests/Unit/FirebaseTokenVerifierTest.php` (14) | The **real** Firebase path offline: tokens signed against a self-signed X509 certificate - valid identity (unverified email recorded, not enforced), cert caching, unknown `kid` refetch, impostor signature, wrong issuer/audience, expired, future `iat`, missing email/`sub`, HS256 forgery, garbage, certificate outage -> `503` |
 

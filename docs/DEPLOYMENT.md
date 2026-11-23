@@ -298,9 +298,11 @@ gh-pages/
 
 How it works:
 
-- The SPA is built with `--base=/mlbbtracker/app/`; `BrowserRouter` derives its
-  `basename` from `import.meta.env.BASE_URL`, so the same source serves both
-  single-origin (`/`) and Pages (`/mlbbtracker/app/`) without changes.
+- The SPA is built with `--base=/mlbbtracker/app/`, and the script exports
+  `VITE_ROUTER_BASENAME=/mlbbtracker/app/` so `BrowserRouter` matches that
+  path. Single-origin builds leave the variable unset (basename `""`) because
+  there the document is served at `/` while Vite's asset base is `/app/` —
+  the asset base is not the router base.
 - GitHub Pages serves `404.html` for unknown paths (the SPA-fallback trick).
   The root `404.html` is the app index with an inline script that folds any
   unknown path under `/mlbbtracker/app/` — React Router v7 renders nothing when

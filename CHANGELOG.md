@@ -3,6 +3,35 @@
 All notable changes are documented here. Format follows Keep a Changelog;
 versions use Semantic Versioning.
 
+## [Unreleased]
+
+### Fixed — Firebase sign-in was unreachable behind the app's own CSP
+- The strict Content-Security-Policy refused the connection to Firebase's
+  Identity Toolkit (`identitytoolkit.googleapis.com`), so email + password
+  sign-in, sign-up and password reset always failed with
+  `auth/network-request-failed` — "Could not reach Firebase" — regardless of
+  the actual connection. `connect-src` now allows the two Firebase
+  Authentication endpoints (`identitytoolkit` + `securetoken` for ID-token
+  refresh); Google sign-in endpoints stay allowed and the `/download` page
+  policy remains closed. Covered by `tests/Feature/CspTest.php` (3 cases).
+
+### Changed — Sign-in / registration UI rebuilt
+- `EmailAuthForm`: tabbed sign-in / create-account / reset instead of buried
+  text links, inline validation on blur (email format, password length,
+  confirmation match), a live requirement checklist while creating an account,
+  a password visibility toggle, `aria-invalid` / `aria-describedby` wiring and
+  `role="alert"` on the form error.
+- `ProfileSetup`: the same blur validation for username, MLBB ID and app
+  password using the exact patterns the server publishes in
+  `GET /api/v1/auth/config`, plus the same checklist and toggle.
+- The shared `Field` component now associates its label with the input
+  (`htmlFor`), shows field-level errors/hints and supports blur validation.
+- The router basename now comes from an explicit `VITE_ROUTER_BASENAME`
+  build variable (set by `deploy_pages.ps1`, empty for single-origin builds)
+  instead of `import.meta.env.BASE_URL` — Vite's asset base (`/app/`) is not
+  the document base, and deriving the basename from it broke routes on the
+  single-origin deployment.
+
 ## [0.12.0] — 2026-11-21
 
 ### Added — Full working Windows package + download website
@@ -23,9 +52,10 @@ versions use Semantic Versioning.
 ### Changed — GitHub Pages layout
 - Pages now serves the **landing page at the root** and the **React SPA under
   `/mlbbtracker/app/`** (`scripts/deploy_pages.ps1`).
-- The SPA builds with `--base=/mlbbtracker/app/` and `BrowserRouter` takes its
-  `basename` from `import.meta.env.BASE_URL`, so deep links such as
-  `/app/compare?h=masha,argus` resolve instead of falling to the router's 404.
+- The SPA builds with `--base=/mlbbtracker/app/` and `deploy_pages.ps1` sets
+  `VITE_ROUTER_BASENAME=/mlbbtracker/app/` so `BrowserRouter` matches deep
+  links such as `/app/compare?h=masha,argus` instead of falling to the
+  router's 404.
 - The root `404.html` is the SPA index plus a redirect that folds unknown paths
   under the basename (React Router v7 renders nothing when a URL does not start
   with the basename), keeping the SPA-fallback trick working on Pages.
